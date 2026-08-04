@@ -1,5 +1,7 @@
 # Deployment 결과 보고서
 
+> **보관 문서:** 이 보고서는 2026-07-27의 29개 후보 배포 스냅샷을 기록한다. 최신 공개 결과는 [v2 현장검수 통합 결과](../05_evaluation/08_v2_현장검수_통합결과.md)와 [GitHub Pages 지도](https://cres17.github.io/daegu-dalseo-senior-bench/)에 있다.
+
 ## 게시 결과
 
 - 게시 주소: `https://dalseo-senior-rest-map.a01085254205.chatgpt.site`

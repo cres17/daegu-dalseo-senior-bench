@@ -1,2 +1,5 @@
 # OSMnx 2.1 계열 API를 기준으로 작성했습니다.
 osmnx>=2.1,<2.2
+pandas>=2.2,<3
+numpy>=2.0,<3
+openpyxl>=3.1,<4

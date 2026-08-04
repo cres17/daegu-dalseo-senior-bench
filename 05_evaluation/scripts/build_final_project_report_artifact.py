@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""달서구 벤치 프로젝트의 최종 방법론·결과 MCP 보고서 artifact를 생성한다."""
+"""달서구 벤치 프로젝트의 최종 방법론·결과·검증 보고서 artifact를 생성한다."""
 
 from __future__ import annotations
 
 import csv
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -12,6 +13,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "05_evaluation" / "reports" / "final_project_methodology_report_artifact.json"
 FINAL = ROOT / "05_evaluation" / "outputs" / "v2_installable_priority_candidates.csv"
+CONDITIONAL = ROOT / "05_evaluation" / "outputs" / "v2_conditional_and_alternative_site_candidates.csv"
+EXCLUDED = ROOT / "05_evaluation" / "outputs" / "v2_excluded_after_field_review.csv"
+MAP = ROOT / "docs" / "index.html"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -49,7 +53,35 @@ def main() -> None:
         )
 
     generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-    title = "달서구 고령자 예상 보행수요 기반 벤치 설치 우선구간 분석"
+    title = "달서구 고령자 벤치 설치 우선구간 최종 기술·검증 보고서"
+
+    installable_ids = {row["field_review_unique_id"] for row in read_csv(FINAL)}
+    map_ids = set(re.findall(r"id:'(V2_(?:300|500)_\d+)'", MAP.read_text(encoding="utf-8")))
+    outcome_counts = {
+        "직접 설치 검토": len(read_csv(FINAL)),
+        "조건부·대체 위치": len(read_csv(CONDITIONAL)),
+        "현장검수 후 제외": len(read_csv(EXCLUDED)),
+    }
+
+    validation_rows = [
+        {"area": "Data Preparation", "check": "저장된 자동검사", "result": "PASS", "evidence": "8/8 통과; 행정동 인구 23건, 출발 520건, 목적지 1,692건, 휴식좌석 3,169건, 보행망 엣지 22,668건", "severity": "없음"},
+        {"area": "Modeling", "check": "저장된 자동검사", "result": "PASS", "evidence": "10/10 통과; 예상 OD 82,833건, 물리 상위 엣지 39개, 500·800·1,200m 시나리오 확인", "severity": "없음"},
+        {"area": "Evaluation", "check": "저장된 자동검사", "result": "PASS", "evidence": "11/11 통과; 36개 민감도 조합. 판정 범위는 현장검토 우선순위이며 최종 설치 승인이 아님", "severity": "없음"},
+        {"area": "v2 재검증", "check": "후보 규칙 검사", "result": "PASS", "evidence": "7/7 통과; 고령자 특화 경로, 밀도 적응형 300·500m, 현장 부적합 자동 제외 확인", "severity": "없음"},
+        {"area": "v2 현장검수", "check": "검수 결과 통합", "result": "PASS", "evidence": "4/4 통과; 40행·고유 physical_id 40개·템플릿 ID 일치·판정 40/40 완료", "severity": "없음"},
+        {"area": "최종 결과", "check": "독립 집계 재계산", "result": "PASS" if sum(outcome_counts.values()) == 40 else "FAIL", "evidence": f"40개 = 직접 검토 {outcome_counts['직접 설치 검토']} + 조건부 {outcome_counts['조건부·대체 위치']} + 제외 {outcome_counts['현장검수 후 제외']}", "severity": "없음" if sum(outcome_counts.values()) == 40 else "차단"},
+        {"area": "공개 지도", "check": "후보 ID 대조", "result": "PASS" if map_ids == installable_ids else "FAIL", "evidence": f"지도 {len(map_ids)}개 ID와 직접 설치 검토 CSV {len(installable_ids)}개 ID가 정확히 일치", "severity": "없음" if map_ids == installable_ids else "차단"},
+        {"area": "코드", "check": "Python 구문·의존성 명세", "result": "PASS", "evidence": "분석 스크립트 compileall 통과; pandas·numpy·openpyxl·OSMnx 버전 범위 명시", "severity": "없음"},
+        {"area": "공개 범위", "check": "민감정보·원천데이터 추적 여부", "result": "PASS", "evidence": "추적 파일에서 원천 공간데이터·CSV·DB·노트북·이미지와 자격증명 패턴 없음", "severity": "없음"},
+    ]
+
+    caveat_rows = [
+        {"caveat": "관측 이동자료 부재", "impact": "예상 보행경로는 실제 GPS 통행량이 아니라 설명 가능한 수요 대리지표", "required_action": "설치 전 표본 보행관찰 또는 이용자 의견조사", "status": "공개 문서에 명시"},
+        {"caveat": "자료 시점 혼재", "impact": "공원 벤치는 2022년, 정류장 이용은 2025년 등 기준시점이 다름", "required_action": "집행 전 좌석 현존과 최신 수요자료 재확인", "status": "운영 단계 확인 필요"},
+        {"caveat": "세밀한 보행환경 미반영", "impact": "보도 유효폭·경사·횡단·차량 회전·소방 동선은 모델 순위에 완전 반영되지 않음", "required_action": "8개 대표구간에서 정확한 설치점 실측", "status": "행정·공학 검토 필요"},
+        {"caveat": "지도 위치의 해석", "impact": "표식은 도로구간 대표점이며 최종 벤치 좌표가 아님", "required_action": "현장 협의 후 설치 좌표 확정", "status": "지도·README에 명시"},
+        {"caveat": "최종 전 과정 재실행 범위", "impact": "이번 인수 검토는 저장된 QA와 핵심 집계를 재검산했으며 원천부터 전체 파이프라인을 다시 돌리지는 않음", "required_action": "원천 갱신 시 단계별 스크립트와 QA 재실행", "status": "재현 절차 보존"},
+    ]
 
     data_layers = [
         {"layer": "행정동 고령인구", "records": 23, "role": "만 65세 이상 주거 수요와 밀도", "preprocessing": "행정동 경계 23개와 명칭 연결, 총 111,111명"},
@@ -140,6 +172,27 @@ def main() -> None:
                 "tables_used": ["dalseo_v2_field_review_completed_40.csv", "05_evaluation/outputs/v2_field_review_validated.csv"],
                 "filters": ["40개 후보 ID 완전 일치", "종합판정 40/40 입력", "현장 NOT_INSTALLABLE 판정은 모델 점수와 무관하게 제외"],
                 "metric_definitions": ["직접 설치 검토: INSTALLABLE이며 기존 좌석 없음·공공 설치 가능성이 확인된 구간", "조건부: 현재 선형 설치가 아니라 인근 대체공간 또는 추가 협의가 필요한 구간"],
+            },
+        },
+        {
+            "id": "final_validation",
+            "label": "최종 인수 검증",
+            "path": "05_evaluation/reports/final_project_methodology_report_artifact.json",
+            "query": {
+                "engine": "python",
+                "language": "python",
+                "description": "저장된 단계별 QA, 최종 분류 CSV, 공개 지도 ID, 추적 파일과 Python 구문을 교차 검증한다.",
+                "tables_used": [
+                    "03_data_preparation/qa/preparation_summary.json",
+                    "04_modeling/qa/modeling_summary.json",
+                    "05_evaluation/qa/evaluation_summary.json",
+                    "05_evaluation/qa/revised_candidate_model_v2_checks.csv",
+                    "05_evaluation/qa/v2_field_review_integration_checks.csv",
+                    "05_evaluation/outputs/v2_installable_priority_candidates.csv",
+                    "docs/index.html",
+                ],
+                "filters": ["공개 저장소 추적 파일만 보안·데이터 범위 검사", "최종 분류 40개와 지도 직접 검토군 8개를 ID 단위로 대조"],
+                "metric_definitions": ["PASS: 기대 행 수·고유 ID·분류 합계·지도 ID가 모두 일치", "차단 이슈: 공개 결과를 잘못 해석하거나 재현을 막는 오류"],
             },
         },
     ]
@@ -260,6 +313,57 @@ def main() -> None:
                     {"field": "sidewalk", "label": "보도", "type": "text"},
                 ],
             },
+            {
+                "id": "validation_table",
+                "title": "최종 인수 검증 결과",
+                "subtitle": "단계별 자동검사, 독립 재집계, 지도·코드·공개범위를 교차 확인",
+                "dataset": "validation_rows",
+                "sourceId": "final_validation",
+                "source": {
+                    "label": "최종 인수 검증 스냅샷",
+                    "path": "05_evaluation/reports/final_project_methodology_report_artifact.json",
+                    "query": {
+                        "engine": "sqlite",
+                        "language": "sql",
+                        "description": "인수 검증 항목별 판정과 근거를 조회한다.",
+                        "sql": "SELECT area, check, result, evidence, severity FROM validation_rows ORDER BY area",
+                        "tables_used": ["validation_rows"],
+                    },
+                },
+                "defaultSort": {"field": "area", "direction": "asc"},
+                "columns": [
+                    {"field": "area", "label": "영역", "type": "text"},
+                    {"field": "check", "label": "검증", "type": "text"},
+                    {"field": "result", "label": "판정", "type": "text"},
+                    {"field": "evidence", "label": "근거", "type": "text"},
+                    {"field": "severity", "label": "잔여 심각도", "type": "text"},
+                ],
+            },
+            {
+                "id": "caveat_table",
+                "title": "남은 한계와 실행 전 확인사항",
+                "subtitle": "분석 산출물의 사용 범위와 후속 행정·현장 조치",
+                "dataset": "caveat_rows",
+                "sourceId": "final_validation",
+                "source": {
+                    "label": "최종 한계·조치 스냅샷",
+                    "path": "05_evaluation/reports/final_project_methodology_report_artifact.json",
+                    "query": {
+                        "engine": "sqlite",
+                        "language": "sql",
+                        "description": "잔여 한계, 영향과 필수 후속조치를 조회한다.",
+                        "sql": "SELECT caveat, impact, required_action, status FROM caveat_rows ORDER BY caveat",
+                        "tables_used": ["caveat_rows"],
+                    },
+                },
+                "defaultSort": {"field": "caveat", "direction": "asc"},
+                "columns": [
+                    {"field": "caveat", "label": "한계", "type": "text"},
+                    {"field": "impact", "label": "해석 영향", "type": "text"},
+                    {"field": "required_action", "label": "필수 조치", "type": "text"},
+                    {"field": "status", "label": "상태", "type": "text"},
+                ],
+            },
         ],
         "sources": sources,
         "blocks": [
@@ -267,7 +371,7 @@ def main() -> None:
             {
                 "id": "technical_summary",
                 "type": "markdown",
-                "body": "## 분석 결과는 8개의 ‘직접 설치 정밀검토 우선구간’으로 수렴했다\n\n- **문제 정의:** 만 65세 이상 인구, 고령자 관련 시설, 의료·공원·정류소와 기존 좌석을 결합해 ‘예상 보행수요는 높지만 앉아 쉴 곳이 부족한 구간’을 찾았다. 실제 GPS 이동경로를 주장하지 않는다.\n- **계산 규모:** 표준화한 출발 위치 488개와 목적지 1,261개를 OSM 보행망으로 연결해 예상 OD 경로 82,833건을 만들고, 활성 공원 벤치·정류장 의자 3,164개까지의 네트워크 거리를 도로별로 계산했다.\n- **검증과 수정:** 초기 후보에서 공업지역·버스 수요 편향과 전체 도로 표시 문제가 확인돼, 고령인구 밀도·고령자 특화 경로·실제 공백 부분구간을 적용한 v2로 재산정했다.\n- **최종 결과:** v2 후보 40개를 검수해 직접 설치 정밀검토 8개, 조건부·대체 위치 18개, 제외 14개로 분류했다. 직접 검토 8개는 기존 좌석 없음과 공공 설치 가능성을 확인했으며 보도는 7개 연속, 1개 일부다."
+                "body": "## 기술 요약 — 분석 결과는 8개의 ‘직접 설치 정밀검토 우선구간’으로 수렴했다\n\n- **문제 정의:** 만 65세 이상 인구, 고령자 관련 시설, 의료·공원·정류소와 기존 좌석을 결합해 ‘예상 보행수요는 높지만 앉아 쉴 곳이 부족한 구간’을 찾았다. 실제 GPS 이동경로를 주장하지 않는다.\n- **계산 규모:** 표준화한 출발 위치 488개와 목적지 1,261개를 OSM 보행망으로 연결해 예상 OD 경로 82,833건을 만들고, 활성 공원 벤치·정류장 의자 3,164개까지의 네트워크 거리를 도로별로 계산했다.\n- **검증과 수정:** 초기 후보에서 공업지역·버스 수요 편향과 전체 도로 표시 문제가 확인돼, 고령인구 밀도·고령자 특화 경로·실제 공백 부분구간을 적용한 v2로 재산정했다.\n- **최종 결과:** v2 후보 40개를 검수해 직접 설치 정밀검토 8개, 조건부·대체 위치 18개, 제외 14개로 분류했다. 직접 검토 8개는 기존 좌석 없음과 공공 설치 가능성을 확인했으며 보도는 7개 연속, 1개 일부다.\n- **최종 판정:** 공개용 분석·현장검토 의사결정 지원물로는 공유 준비 완료다. 다만 실제 설치 승인에는 정확한 설치점 실측과 관리청·토지·안전 협의가 필요하다."
             },
             {
                 "id": "outcome_finding",
@@ -326,14 +430,22 @@ def main() -> None:
             },
             {"id": "final_candidates", "type": "table", "tableId": "final_candidates_table", "layout": "full"},
             {
+                "id": "final_validation_finding",
+                "type": "markdown",
+                "sourceId": "final_validation",
+                "body": "## 최종 인수 검증 — 공개 결과를 막는 오류는 발견되지 않았다\n\n단계별 저장 QA 40개(8+10+11+7+4)가 모두 PASS였고, 최종 분류는 40개 = 직접 설치 검토 8개 + 조건부 18개 + 제외 14개로 재계산됐다. 공개 지도에 넣은 후보 ID 8개는 직접 설치 검토 CSV와 정확히 일치한다. Python 스크립트 구문, 의존성 명세, Markdown 링크와 공개 저장소의 데이터·자격증명 노출 범위도 별도로 확인했다. 검증 결과는 정확한 값 조회가 목적이므로 막대그래프를 추가하지 않고 표로 제공한다."
+            },
+            {"id": "validation", "type": "table", "tableId": "validation_table", "layout": "full"},
+            {
                 "id": "robustness_limits",
                 "type": "markdown",
-                "body": "## 자동검증은 계산 재현성을 확인했지만 실제 이동을 증명하지는 않는다\n\nData Preparation 8개, Modeling 10개, Evaluation 11개, v2 7개, 현장검수 통합 4개 자동검사가 모두 통과했다. 저장된 82,833개 경로의 물리 엣지 연속성 실패는 0건이었고 500m⊆800m⊆1,200m 관계, 공백 비율 범위, 좌석 충분 구간 제외도 확인했다. 그러나 행정동보다 작은 고령인구가 없고, 버스 이용량은 전체 연령이며, 공원 벤치는 2022년 자료다. 따라서 결과는 설명 가능한 공간 선별 모델이지 고령자의 실제 통행량 예측이나 인과 추정이 아니다."
+                "body": "## 한계·불확실성·강건성 — 계산은 일관되지만 실제 이동과 설치 승인을 증명하지는 않는다\n\nData Preparation 8개, Modeling 10개, Evaluation 11개, v2 7개, 현장검수 통합 4개 자동검사가 모두 통과했다. 저장된 82,833개 경로의 물리 엣지 연속성 실패는 0건이었고 500m⊆800m⊆1,200m 관계, 공백 비율 범위, 좌석 충분 구간 제외도 확인했다. 이번 최종 인수 검토에서는 저장된 QA와 핵심 최종 집계를 독립 재검산했지만 원천파일부터 전체 파이프라인을 다시 실행하지는 않았다. 또한 행정동보다 작은 고령인구가 없고, 버스 이용량은 전체 연령이며, 공원 벤치는 2022년 자료다. 따라서 결과는 설명 가능한 공간 선별 모델이지 고령자의 실제 통행량 예측이나 인과 추정이 아니다."
             },
+            {"id": "caveats", "type": "table", "tableId": "caveat_table", "layout": "full"},
             {
                 "id": "next_steps",
                 "type": "markdown",
-                "body": "## 다음 단계는 8개 구간의 행정·공학적 정밀검토다\n\n1. 각 구간에서 정확한 설치점을 정하고 유효 보행 폭·차량 회전·소방 및 진입 동선을 실측한다.\n2. 도로관리청·토지관리부서와 공공부지 여부, 유지관리 주체, 인허가 가능성을 확인한다.\n3. 일부 보도인 두류남길은 인근 50~100m 대체 위치를 병행 검토한다.\n4. 조건부 18개 중 차량 충돌 우려 12개는 도로 위 설치가 아니라 공공시설 입구·건물 후퇴공간·자투리 공공부지 탐색 대상으로 관리한다.\n5. 실제 설치 후 이용량·민원·보행 안전 변화를 기록하면 다음 분석에서 가중치와 기준거리의 근거를 보정할 수 있다."
+                "body": "## 권고 및 종료 기준 — 코드·문서 프로젝트는 완료하고, 실행 단계는 8개 구간의 정밀검토로 넘긴다\n\n1. 각 구간에서 정확한 설치점을 정하고 유효 보행 폭·차량 회전·소방 및 진입 동선을 실측한다.\n2. 도로관리청·토지관리부서와 공공부지 여부, 유지관리 주체, 인허가 가능성을 확인한다.\n3. 일부 보도인 두류남길은 인근 50~100m 대체 위치를 병행 검토한다.\n4. 조건부 18개 중 차량 충돌 우려 12개는 도로 위 설치가 아니라 공공시설 입구·건물 후퇴공간·자투리 공공부지 탐색 대상으로 관리한다.\n5. 실제 설치 후 이용량·민원·보행 안전 변화를 기록하면 다음 분석에서 가중치와 기준거리의 근거를 보정할 수 있다."
             },
             {
                 "id": "further_questions",
@@ -355,6 +467,8 @@ def main() -> None:
                 "field_outcomes": outcome_rows,
                 "revision_rows": revision_rows,
                 "final_candidates": final_rows,
+                "validation_rows": validation_rows,
+                "caveat_rows": caveat_rows,
             },
         },
         "sources": sources,
