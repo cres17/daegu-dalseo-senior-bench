@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="대구 달서구 고령자 보행 휴식시설 직접 설치 검토 후보 지도" />
+    <title>달서구 고령자 휴식시설 우선 검토 지도</title>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <style>
+      :root { --ink:#102a43; --muted:#627d98; --paper:#f7fafc; --line:#d9e2ec; --blue:#1769aa; --teal:#057a75; --orange:#d97706; --shadow:0 8px 24px rgba(16,42,67,.10); }
+      * { box-sizing:border-box; }
+      body { margin:0; background:var(--paper); color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+      header { background:linear-gradient(120deg,#0b3c5d,#1769aa); color:white; padding:32px max(24px,calc((100vw - 1240px)/2)); }
+      header p { margin:8px 0 0; max-width:850px; color:#d9edff; line-height:1.65; }
+      h1 { margin:0; font-size:clamp(1.5rem,3vw,2.25rem); }
+      main { max-width:1240px; margin:0 auto; padding:24px; }
+      .notice { border-left:4px solid var(--orange); background:#fff8eb; padding:14px 16px; line-height:1.6; margin-bottom:20px; }
+      .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+      .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px; box-shadow:var(--shadow); }
+      .stat strong { display:block; font-size:1.55rem; color:var(--blue); }
+      .stat span { font-size:.88rem; color:var(--muted); }
+      .layout { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(320px,.8fr); gap:20px; }
+      .map-card,.detail { background:#fff; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:var(--shadow); }
+      #map { height:620px; }
+      .detail { padding:20px; }
+      .detail h2 { font-size:1.2rem; margin:0 0 6px; }
+      .eyebrow { color:var(--teal); font-size:.82rem; font-weight:700; letter-spacing:.06em; }
+      .rank { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:34px; border-radius:50%; background:var(--blue); color:white; font-weight:800; margin-right:8px; }
+      .reason { margin:16px 0; padding:12px; border-radius:10px; background:#e9f7f5; color:#075e59; line-height:1.55; font-size:.92rem; }
+      .metrics { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:14px 0; }
+      .metric { border:1px solid var(--line); border-radius:8px; padding:9px; }
+      .metric b { display:block; color:var(--muted); font-size:.75rem; font-weight:600; }
+      .metric span { font-size:1rem; font-weight:750; }
+      .checks { margin:12px 0 0; padding:0; list-style:none; font-size:.9rem; }
+      .checks li { padding:6px 0; border-bottom:1px solid #edf2f7; }
+      .good { color:#087f5b; font-weight:700; } .watch { color:#b45309; font-weight:700; }
+      .candidate-list { margin-top:20px; }
+      .candidate-list h2 { margin:0 0 10px; font-size:1.15rem; }
+      .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+      button.candidate { appearance:none; border:1px solid var(--line); background:white; border-radius:10px; padding:12px; cursor:pointer; color:var(--ink); text-align:left; min-height:96px; }
+      button.candidate:hover,button.candidate.active { border-color:var(--blue); box-shadow:0 0 0 3px rgba(23,105,170,.13); }
+      button.candidate b { display:block; margin-bottom:5px; } button.candidate small { color:var(--muted); }
+      footer { max-width:1240px; margin:0 auto; padding:24px; color:var(--muted); font-size:.85rem; line-height:1.6; }
+      .leaflet-popup-content { font-family:inherit; line-height:1.5; }
+      @media (max-width:900px) { .stats,.cards { grid-template-columns:repeat(2,1fr); } .layout { grid-template-columns:1fr; } #map { height:440px; } }
+      @media (max-width:480px) { main { padding:14px; } .stats,.cards { grid-template-columns:1fr; } header { padding:24px 14px; } }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>달서구 고령자 보행 휴식시설 우선 검토 지도</h1>
+      <p>고령자 예상 보행 수요, 휴식시설 공백, 민감도 분석과 현장검수를 통과한 직접 설치 검토 후보 8개를 보여줍니다.</p>
+    </header>
+    <main>
+      <div class="notice"><b>해석 기준</b> · 점수는 최종 설치 승인이 아닙니다. 지도 후보는 기존 좌석 없음, 보도·경사·횡단 위험 및 공공 설치 가능성을 현장에서 확인한 <b>우선 정밀검토 구간</b>입니다.</div>
+      <section class="stats" aria-label="결과 요약"><div class="stat"><strong>40</strong><span>v2 현장검수 후보</span></div><div class="stat"><strong>8</strong><span>직접 설치 검토군</span></div><div class="stat"><strong>18</strong><span>조건부·대체 위치 탐색</span></div><div class="stat"><strong>14</strong><span>현장 설치 부적합 제외</span></div></section>
+      <section class="layout">
+        <div class="map-card"><div id="map" aria-label="직접 설치 검토 후보 지도"></div></div>
+        <aside class="detail" id="detail" aria-live="polite"></aside>
+      </section>
+      <section class="candidate-list"><h2>직접 설치 검토 후보 — 카드를 누르면 지도가 해당 위치로 확대됩니다.</h2><div class="cards" id="cards"></div></section>
+    </main>
+    <footer>
+      데이터 기준: v2 현장검수 통합 결과. 버스 이용량은 전체 연령 이용량의 대리변수이며, 실제 고령자 GPS 이동 기록을 사용하지 않습니다. 바탕지도 © OpenStreetMap contributors.
+    </footer>
+    <script>
+      const candidates = [
+        {rank:1,id:'V2_300_009',name:'도로명 없음',dong:'상인1동',lat:35.8202506,lon:128.5360584,tier:'고밀도 300m',population:7086,density:4719,gap:158.4,seat:400.3,routes:24,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
+        {rank:2,id:'V2_300_011',name:'월곡로35길',dong:'상인2동',lat:35.8095715,lon:128.5407863,tier:'고밀도 300m',population:4077,density:4392,gap:40.4,seat:420.3,routes:29,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'높음',shade:'없음',ownership:'공공 설치 가능성 높음'},
+        {rank:3,id:'V2_300_016',name:'상원로',dong:'상인1동',lat:35.8192221,lon:128.5310389,tier:'고밀도 300m',population:7086,density:4719,gap:162.8,seat:371.7,routes:47,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
+        {rank:4,id:'V2_500_007',name:'두류남길',dong:'두류1·2동',lat:35.8570796,lon:128.5696609,tier:'표준 500m',population:4077,density:3143,gap:22.9,seat:509.4,routes:18,sensitivity:6,sidewalk:'일부 보도',slope:'평탄',crossing:'중간',shade:'없음',ownership:'공공 설치 가능성 높음'},
+        {rank:5,id:'V2_500_012',name:'달구벌대로378길',dong:'두류1·2동',lat:35.8575679,lon:128.5699801,tier:'표준 500m',population:4077,density:3143,gap:40.8,seat:518.1,routes:2,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'없음',ownership:'공공 설치 가능성 높음'},
+        {rank:6,id:'V2_500_015',name:'도로명 없음',dong:'송현1동',lat:35.8250038,lon:128.5574620,tier:'표준 500m',population:4941,density:2036,gap:296.9,seat:938.9,routes:2,sensitivity:6,sidewalk:'연속 보도',slope:'급경사',crossing:'낮음',shade:'양호',ownership:'공공 설치 가능성 높음'},
+        {rank:7,id:'V2_300_017',name:'도로명 없음',dong:'용산1동',lat:35.8498741,lon:128.5269763,tier:'고밀도 300m',population:5279,density:3999,gap:258.8,seat:449.8,routes:43,sensitivity:4,sidewalk:'연속 보도',slope:'보통',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
+        {rank:8,id:'V2_300_018',name:'월곡로35길',dong:'상인2동',lat:35.8106878,lon:128.5430045,tier:'고밀도 300m',population:4077,density:4392,gap:101.2,seat:388.1,routes:44,sensitivity:4,sidewalk:'연속 보도',slope:'평탄',crossing:'낮음',shade:'없음',ownership:'공공 설치 가능성 높음'}
+      ];
+      const map = L.map('map', {scrollWheelZoom:true}).setView([35.829,128.545], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
+      const markers = new Map();
+      const detail = document.getElementById('detail'); const cards = document.getElementById('cards');
+      function fmt(n) { return new Intl.NumberFormat('ko-KR').format(n); }
+      function riskClass(v) { return v === '높음' || v === '급경사' ? 'watch' : 'good'; }
+      function renderDetail(c) {
+        detail.innerHTML = `<div class="eyebrow">직접 설치 검토 ${c.tier}</div><h2><span class="rank">${c.rank}</span>${c.name}</h2><div>${c.id} · ${c.dong}</div><p class="reason"><b>왜 선택됐나?</b><br>고령인구 밀도 ${fmt(c.density)}명/㎢와 ${c.sensitivity}/6 민감도 시나리오 출현을 바탕으로 휴식시설 공백을 확인했고, 현장검수에서 기존 좌석 없음과 공공 설치 가능성이 확인됐습니다.</p><div class="metrics"><div class="metric"><b>65세 이상 인구</b><span>${fmt(c.population)}명</span></div><div class="metric"><b>고령인구 밀도</b><span>${fmt(c.density)}명/㎢</span></div><div class="metric"><b>적응형 공백 기준 / 길이</b><span>${c.tier.split(' ').at(-1)} / ${c.gap}m</span></div><div class="metric"><b>최대 좌석거리</b><span>${c.seat}m</span></div><div class="metric"><b>800m 예상 경로</b><span>${c.routes}건</span></div><div class="metric"><b>민감도 출현</b><span>${c.sensitivity}/6회</span></div></div><ul class="checks"><li><b>보도:</b> <span class="${c.sidewalk === '연속 보도' ? 'good' : 'watch'}">${c.sidewalk}</span></li><li><b>경사:</b> <span class="${riskClass(c.slope)}">${c.slope}</span> · <b>횡단 위험:</b> <span class="${riskClass(c.crossing)}">${c.crossing}</span></li><li><b>그늘·보호:</b> <span class="${c.shade === '양호' ? 'good' : 'watch'}">${c.shade}</span></li><li><b>설치 가능성:</b> <span class="good">${c.ownership}</span></li></ul>`;
+        document.querySelectorAll('button.candidate').forEach(b => b.classList.toggle('active', b.dataset.id === c.id));
+      }
+      function select(c) { map.flyTo([c.lat,c.lon], 16, {duration:.7}); markers.get(c.id).openPopup(); renderDetail(c); }
+      candidates.forEach(c => {
+        const icon = L.divIcon({className:'', html:`<div style="background:#1769aa;color:#fff;border:3px solid #fff;box-shadow:0 2px 7px #345;border-radius:50%;width:31px;height:31px;display:grid;place-items:center;font-weight:800">${c.rank}</div>`, iconSize:[31,31], iconAnchor:[15,15]});
+        const marker = L.marker([c.lat,c.lon], {icon}).addTo(map).bindPopup(`<b>${c.rank}. ${c.name}</b><br>${c.dong} · ${c.tier}<br><small>클릭하면 선정 근거를 확인합니다.</small>`);
+        marker.on('click', () => renderDetail(c)); markers.set(c.id,marker);
+        const button = document.createElement('button'); button.className='candidate'; button.dataset.id=c.id; button.innerHTML=`<b>${c.rank}. ${c.name}</b><small>${c.dong} · ${c.tier}<br>공백 ${c.gap}m · 좌석거리 ${c.seat}m</small>`; button.onclick=()=>select(c); cards.appendChild(button);
+      });
+      renderDetail(candidates[0]);
+    </script>
+  </body>
+</html>
