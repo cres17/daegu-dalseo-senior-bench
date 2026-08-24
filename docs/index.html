@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="대구 달서구 고령자 보행 휴식시설 직접 설치 검토 후보 지도" />
+    <meta name="description" content="대구 달서구 고령자 보행 휴식시설 안전 재검수 후보 지도" />
     <title>달서구 고령자 휴식시설 우선 검토 지도</title>
     <link rel="preconnect" href="https://unpkg.com" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -50,50 +50,52 @@
   </head>
   <body>
     <header>
-      <h1>달서구 고령자 보행 휴식시설 우선 검토 지도</h1>
-      <p>고령자 예상 보행 수요, 휴식시설 공백, 민감도 분석과 현장검수를 통과한 직접 설치 검토 후보 8개를 보여줍니다.</p>
+      <h1>달서구 고령자 보행 휴식시설 안전 재검수 지도</h1>
+      <p id="summary-text">현장 종합판정과 법정 유효폭 기준을 포함한 세부 안전 필드의 교차검증 결과를 불러오는 중입니다.</p>
     </header>
     <main>
-      <div class="notice"><b>해석 기준</b> · 점수는 최종 설치 승인이 아닙니다. 지도 표식은 후보 도로구간의 대표점이며 최종 설치 좌표가 아닙니다. 후보는 기존 좌석 없음, 보도·경사·횡단 위험 및 공공 설치 가능성을 현장에서 확인한 <b>우선 정밀검토 구간</b>입니다.</div>
-      <section class="stats" aria-label="결과 요약"><div class="stat"><strong>40</strong><span>v2 현장검수 후보</span></div><div class="stat"><strong>8</strong><span>직접 설치 검토군</span></div><div class="stat"><strong>18</strong><span>조건부·대체 위치 탐색</span></div><div class="stat"><strong>14</strong><span>현장 설치 부적합 제외</span></div></section>
+      <div class="notice" id="notice"><b>해석 기준</b> · 설치 후 남는 최협소 유효폭은 원칙 2.0m 이상이어야 합니다. 1.2~2.0m는 관리청의 예외 인정 근거가 있어야 하며, 1.5m 미만은 교행구역 등 추가 요건까지 확인합니다. 유효폭·검토자·검토일 누락 또는 보도·경사·횡단 위험 모순이 있으면 원래 종합판정이 INSTALLABLE이어도 자동 차단됩니다.</div>
+      <section class="stats" aria-label="결과 요약"><div class="stat"><strong id="total-count">-</strong><span>v2 현장검수 후보</span></div><div class="stat"><strong id="direct-count">-</strong><span>안전 게이트 통과</span></div><div class="stat"><strong id="blocked-count">-</strong><span>기존 INSTALLABLE 중 차단</span></div><div class="stat"><strong id="excluded-count">-</strong><span>현장 설치 부적합 제외</span></div></section>
       <section class="layout">
-        <div class="map-card"><div id="map" aria-label="직접 설치 검토 후보 지도"></div></div>
+        <div class="map-card"><div id="map" aria-label="안전 재검수 후보 지도"></div></div>
         <aside class="detail" id="detail" aria-live="polite"></aside>
       </section>
-      <section class="candidate-list"><h2>직접 설치 검토 후보 — 카드를 누르면 지도가 해당 위치로 확대됩니다.</h2><div class="cards" id="cards"></div></section>
+      <section class="candidate-list"><h2 id="list-title">안전 재검수 후보 — 카드를 누르면 차단 사유를 확인할 수 있습니다.</h2><div class="cards" id="cards"></div></section>
     </main>
     <footer>
-      데이터 기준: v2 현장검수 통합 결과. 버스 이용량은 전체 연령 이용량의 대리변수이며, 실제 고령자 GPS 이동 기록을 사용하지 않습니다. 바탕지도 © OpenStreetMap contributors.
+      데이터 기준: v2 현장검수 통합 결과와 안전 교차검증. 버스 이용량은 전체 연령 이용량의 대리변수이며, 실제 고령자 GPS 이동 기록을 사용하지 않습니다. 바탕지도 © OpenStreetMap contributors.
     </footer>
     <script>
-      const candidates = [
-        {rank:1,id:'V2_300_009',name:'도로명 없음',dong:'상인1동',lat:35.8202506,lon:128.5360584,tier:'고밀도 300m',population:7086,density:4719,gap:158.4,seat:400.3,routes:24,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
-        {rank:2,id:'V2_300_011',name:'월곡로35길',dong:'상인2동',lat:35.8095715,lon:128.5407863,tier:'고밀도 300m',population:4077,density:4392,gap:40.4,seat:420.3,routes:29,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'높음',shade:'없음',ownership:'공공 설치 가능성 높음'},
-        {rank:3,id:'V2_300_016',name:'상원로',dong:'상인1동',lat:35.8192221,lon:128.5310389,tier:'고밀도 300m',population:7086,density:4719,gap:162.8,seat:371.7,routes:47,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
-        {rank:4,id:'V2_500_007',name:'두류남길',dong:'두류1·2동',lat:35.8570796,lon:128.5696609,tier:'표준 500m',population:4077,density:3143,gap:22.9,seat:509.4,routes:18,sensitivity:6,sidewalk:'일부 보도',slope:'평탄',crossing:'중간',shade:'없음',ownership:'공공 설치 가능성 높음'},
-        {rank:5,id:'V2_500_012',name:'달구벌대로378길',dong:'두류1·2동',lat:35.8575679,lon:128.5699801,tier:'표준 500m',population:4077,density:3143,gap:40.8,seat:518.1,routes:2,sensitivity:6,sidewalk:'연속 보도',slope:'평탄',crossing:'중간',shade:'없음',ownership:'공공 설치 가능성 높음'},
-        {rank:6,id:'V2_500_015',name:'도로명 없음',dong:'송현1동',lat:35.8250038,lon:128.5574620,tier:'표준 500m',population:4941,density:2036,gap:296.9,seat:938.9,routes:2,sensitivity:6,sidewalk:'연속 보도',slope:'급경사',crossing:'낮음',shade:'양호',ownership:'공공 설치 가능성 높음'},
-        {rank:7,id:'V2_300_017',name:'도로명 없음',dong:'용산1동',lat:35.8498741,lon:128.5269763,tier:'고밀도 300m',population:5279,density:3999,gap:258.8,seat:449.8,routes:43,sensitivity:4,sidewalk:'연속 보도',slope:'보통',crossing:'중간',shade:'양호',ownership:'공공 설치 가능성 높음'},
-        {rank:8,id:'V2_300_018',name:'월곡로35길',dong:'상인2동',lat:35.8106878,lon:128.5430045,tier:'고밀도 300m',population:4077,density:4392,gap:101.2,seat:388.1,routes:44,sensitivity:4,sidewalk:'연속 보도',slope:'평탄',crossing:'낮음',shade:'없음',ownership:'공공 설치 가능성 높음'}
-      ];
       const map = L.map('map', {scrollWheelZoom:true}).setView([35.829,128.545], 12);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
       const markers = new Map();
       const detail = document.getElementById('detail'); const cards = document.getElementById('cards');
       function fmt(n) { return new Intl.NumberFormat('ko-KR').format(n); }
-      function riskClass(v) { return v === '높음' || v === '급경사' ? 'watch' : 'good'; }
+      function display(v) { const labels={YES:'확인',PARTIAL:'일부',NO:'아니오',FLAT:'평탄',MODERATE:'보통',STEEP:'급경사',LOW:'낮음',MEDIUM:'중간',HIGH:'높음',PUBLIC_LIKELY:'공공 가능성 높음',MISSING:'미입력',INVALID:'값 오류',STANDARD_PASS:'일반 기준 통과',EXCEPTION_PASS:'승인된 예외 기준 통과',EXCEPTION_REVIEW_REQUIRED:'예외 근거 필요',BELOW_ABSOLUTE_MIN:'예외 최저폭 미달',APPROVED:'승인 확인'}; return labels[v] ?? v; }
       function renderDetail(c) {
-        detail.innerHTML = `<div class="eyebrow">직접 설치 검토 ${c.tier}</div><h2><span class="rank">${c.rank}</span>${c.name}</h2><div>${c.id} · ${c.dong}</div><p class="reason"><b>왜 선택됐나?</b><br>고령인구 밀도 ${fmt(c.density)}명/㎢와 ${c.sensitivity}/6 민감도 시나리오 출현을 바탕으로 휴식시설 공백을 확인했고, 현장검수에서 기존 좌석 없음과 공공 설치 가능성이 확인됐습니다.</p><div class="metrics"><div class="metric"><b>65세 이상 인구</b><span>${fmt(c.population)}명</span></div><div class="metric"><b>고령인구 밀도</b><span>${fmt(c.density)}명/㎢</span></div><div class="metric"><b>적응형 공백 기준 / 길이</b><span>${c.tier.split(' ').at(-1)} / ${c.gap}m</span></div><div class="metric"><b>최대 좌석거리</b><span>${c.seat}m</span></div><div class="metric"><b>800m 예상 경로</b><span>${c.routes}건</span></div><div class="metric"><b>민감도 출현</b><span>${c.sensitivity}/6회</span></div></div><ul class="checks"><li><b>보도:</b> <span class="${c.sidewalk === '연속 보도' ? 'good' : 'watch'}">${c.sidewalk}</span></li><li><b>경사:</b> <span class="${riskClass(c.slope)}">${c.slope}</span> · <b>횡단 위험:</b> <span class="${riskClass(c.crossing)}">${c.crossing}</span></li><li><b>그늘·보호:</b> <span class="${c.shade === '양호' ? 'good' : 'watch'}">${c.shade}</span></li><li><b>설치 가능성:</b> <span class="good">${c.ownership}</span></li></ul>`;
+        detail.innerHTML = `<div class="eyebrow">${c.gateStatus === 'PASS' ? '안전 게이트 통과' : '직접 검토 차단'} · ${c.tier}</div><h2><span class="rank">${c.rank}</span>${c.name}</h2><div>${c.id} · ${c.dong}</div><p class="reason"><b>${c.gateStatus === 'PASS' ? '통과 근거' : '차단 사유'}</b><br>${c.gateReasons.length ? c.gateReasons.join('<br>') : '필수 안전 필드를 모두 충족했습니다.'}</p><div class="metrics"><div class="metric"><b>65세 이상 인구</b><span>${fmt(c.population)}명</span></div><div class="metric"><b>고령인구 밀도</b><span>${fmt(c.density)}명/㎢</span></div><div class="metric"><b>적응형 공백 기준 / 길이</b><span>${c.tier.split(' ').at(-1)} / ${c.gap}m</span></div><div class="metric"><b>최대 좌석거리</b><span>${c.seat}m</span></div><div class="metric"><b>800m 예상 경로</b><span>${c.routes}건</span></div><div class="metric"><b>민감도 출현</b><span>${c.sensitivity}/6회</span></div></div><ul class="checks"><li><b>보도:</b> ${display(c.sidewalk)} · <b>설치 후 유효폭:</b> ${c.widthM === null ? '미입력' : `${c.widthM}m`} (원칙 ${c.requiredWidthM}m)</li><li><b>유효폭 판정:</b> ${display(c.widthCompliance)} · <b>예외 승인:</b> ${display(c.widthException)}</li><li><b>경사:</b> ${display(c.slope)} · <b>횡단 위험:</b> ${display(c.crossing)}</li><li><b>설치 가능성:</b> ${display(c.ownership)}</li></ul>`;
         document.querySelectorAll('button.candidate').forEach(b => b.classList.toggle('active', b.dataset.id === c.id));
       }
       function select(c) { map.flyTo([c.lat,c.lon], 16, {duration:.7}); markers.get(c.id).openPopup(); renderDetail(c); }
-      candidates.forEach(c => {
+      async function init() {
+        const response = await fetch('./candidates.json', {cache:'no-store'});
+        if (!response.ok) throw new Error(`후보 데이터 로드 실패: ${response.status}`);
+        const payload = await response.json(); const candidates = payload.candidates;
+        document.getElementById('total-count').textContent = payload.summary.total;
+        document.getElementById('direct-count').textContent = payload.summary.direct;
+        document.getElementById('blocked-count').textContent = payload.summary.safetyBlocked;
+        document.getElementById('excluded-count').textContent = payload.summary.excluded;
+        document.getElementById('summary-text').textContent = payload.mode === 'DIRECT_REVIEW' ? `안전 게이트를 통과한 직접 정밀검토 후보 ${payload.summary.direct}개를 보여줍니다.` : `기존 INSTALLABLE ${payload.summary.safetyBlocked}개가 안전 게이트에서 차단되어 재검수가 필요합니다. 현재 직접 설치 검토군은 ${payload.summary.direct}개입니다.`;
+        document.getElementById('list-title').textContent = payload.mode === 'DIRECT_REVIEW' ? '안전 게이트 통과 후보' : '안전 재검수 후보 — 카드를 누르면 차단 사유를 확인할 수 있습니다.';
+        candidates.forEach(c => {
         const icon = L.divIcon({className:'', html:`<div style="background:#1769aa;color:#fff;border:3px solid #fff;box-shadow:0 2px 7px #345;border-radius:50%;width:31px;height:31px;display:grid;place-items:center;font-weight:800">${c.rank}</div>`, iconSize:[31,31], iconAnchor:[15,15]});
-        const marker = L.marker([c.lat,c.lon], {icon}).addTo(map).bindPopup(`<b>${c.rank}. ${c.name}</b><br>${c.dong} · ${c.tier}<br><small>클릭하면 선정 근거를 확인합니다.</small>`);
+        const marker = L.marker([c.lat,c.lon], {icon}).addTo(map).bindPopup(`<b>${c.rank}. ${c.name}</b><br>${c.dong} · ${c.tier}<br><small>클릭하면 안전 게이트 판정을 확인합니다.</small>`);
         marker.on('click', () => renderDetail(c)); markers.set(c.id,marker);
         const button = document.createElement('button'); button.className='candidate'; button.dataset.id=c.id; button.innerHTML=`<b>${c.rank}. ${c.name}</b><small>${c.dong} · ${c.tier}<br>공백 ${c.gap}m · 좌석거리 ${c.seat}m</small>`; button.onclick=()=>select(c); cards.appendChild(button);
-      });
-      renderDetail(candidates[0]);
+        });
+        if (candidates.length) renderDetail(candidates[0]); else detail.innerHTML = '<h2>표시할 후보가 없습니다.</h2>';
+      }
+      init().catch(error => { detail.innerHTML = `<h2>데이터를 불러오지 못했습니다.</h2><p>${error.message}</p>`; console.error(error); });
     </script>
   </body>
 </html>

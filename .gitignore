@@ -1,0 +1,39 @@
+# Local environments and caches
+.venv/
+**/__pycache__/
+**/.ipynb_checkpoints/
+**/node_modules/
+**/.next/
+**/dist/
+**/.wrangler/
+.DS_Store
+*.log
+
+# Raw, intermediate, field-review, and generated data
+*.csv
+*.geojson
+*.gpkg
+*.graphml
+*.sqlite
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.img
+*.ipynb
+*.qmd
+*.png
+
+# Generated QA and report payloads are local evidence artifacts.
+02_data_understanding/profile_outputs*/
+02_data_understanding/reports/*.json
+03_data_preparation/qa/
+04_modeling/qa/
+05_evaluation/qa/
+05_evaluation/reports/*.json
+06_deployment/qa/
+
+# Deployment HTML is tracked explicitly where already published; new local
+# exports should not be added accidentally.
+*.html

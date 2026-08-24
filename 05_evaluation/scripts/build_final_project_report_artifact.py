@@ -13,6 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "05_evaluation" / "reports" / "final_project_methodology_report_artifact.json"
 FINAL = ROOT / "05_evaluation" / "outputs" / "v2_installable_priority_candidates.csv"
+VALIDATED = ROOT / "05_evaluation" / "outputs" / "v2_field_review_validated.csv"
 CONDITIONAL = ROOT / "05_evaluation" / "outputs" / "v2_conditional_and_alternative_site_candidates.csv"
 EXCLUDED = ROOT / "05_evaluation" / "outputs" / "v2_excluded_after_field_review.csv"
 MAP = ROOT / "docs" / "index.html"
@@ -28,6 +29,21 @@ def number(value: str, digits: int = 1) -> float:
 
 
 def main() -> None:
+    validated_rows = read_csv(VALIDATED)
+    blocked_installable = [
+        row
+        for row in validated_rows
+        if row["review_status"] == "INSTALLABLE"
+        and row.get("safety_gate_status") != "PASS"
+    ]
+    if blocked_installable:
+        raise RuntimeError(
+            "최종 보고서 생성을 차단했습니다: 기존 INSTALLABLE "
+            f"{len(blocked_installable)}개가 safety gate를 통과하지 못했습니다. "
+            "유효폭·안전 필드·검토자·검토일을 보완한 뒤 현장검수 통합을 "
+            "다시 실행하세요."
+        )
+
     final_rows = []
     for row in read_csv(FINAL):
         final_rows.append(
@@ -50,6 +66,12 @@ def main() -> None:
                 "existing_seat": "없음",
                 "public_installability": "높음",
             }
+        )
+    if len(final_rows) != 8:
+        raise RuntimeError(
+            "이 보고서 템플릿은 8개 직접 검토군을 전제로 작성됐습니다. "
+            f"현재 safety gate 통과 후보는 {len(final_rows)}개이므로 동적 보고서 "
+            "템플릿으로 갱신하기 전에는 공개 산출물을 덮어쓰지 않습니다."
         )
 
     generated_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
