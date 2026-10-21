@@ -1,7 +1,8 @@
+<div align="center">
+
 # 달서구 어르신 휴식 좌석 공백 분석
 
 [![Deploy map](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml)
-
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logoColor=white&logo=python)
 ![pandas](https://img.shields.io/badge/pandas-150458?style=flat&logoColor=white&logo=pandas)
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat&logoColor=white&logo=numpy)
@@ -14,6 +15,8 @@
 ![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-181717?style=flat&logoColor=white&logo=github)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logoColor=white&logo=githubactions)
 ![unittest](https://img.shields.io/badge/unittest-3776AB?style=flat&logoColor=white)
+
+</div>
 
 대구 달서구에서 어르신이 자주 걸을 것으로 예상되는데 앉아 쉴 곳까지 멀리 가야 하는 길을 공공데이터와 OpenStreetMap 보행망으로 찾고, 현장검수 결과를 안전 기준으로 다시 걸러 지도로 공개한 프로젝트입니다. 결과는 벤치 설치 위치가 아니라 현장조사와 관계기관 협의를 먼저 할 구간이며, 실제 고령자의 GPS 이동 기록은 쓰지 않았습니다.
 
