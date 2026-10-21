@@ -1,387 +1,76 @@
-# 달서구에서 어르신이 잠시 앉아 쉴 곳을 찾는 방법
+# 달서구 어르신 휴식 좌석 공백 분석
 
-[Interactive map](https://cres17.github.io/daegu-dalseo-senior-bench/)
 [![Deploy map](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml)
 
-이 프로젝트는 대구광역시 달서구에서 **어르신의 이동이 예상되는 길이면서, 앉아 쉴 곳까지의 거리가 긴 구간**을 찾기 위해 시작했습니다.
-
-처음부터 “여기에 벤치를 설치하면 된다”는 답을 내리려 한 것은 아닙니다. 공공데이터만으로는 보도의 실제 폭, 경사, 사유지 여부, 차량 통행 방해 같은 현장 조건을 알 수 없기 때문입니다. 대신 수많은 도로 중 어디부터 사람이 직접 확인해야 하는지를 좁히고, 현장조사 결과가 들어오면 다시 안전 조건을 확인하는 흐름을 만들었습니다.
-
-그래서 이 저장소의 결과는 **최종 설치 위치**가 아니라 **현장조사와 관계기관 협의를 먼저 진행할 구간**입니다. 실제 고령자의 GPS 이동 기록이나 개인 이동 경로도 사용하지 않았습니다.
-
-- [공개 지도 바로 보기](https://cres17.github.io/daegu-dalseo-senior-bench/)
-- [기술·검증 보고서 보기](https://cres17.github.io/daegu-dalseo-senior-bench/final-review.html)
-- [사용한 데이터와 기준시점 확인](DATA_SOURCES.md)
-
-## 아키텍처
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/architecture-dark.svg">
-  <img src="docs/assets/readme/architecture.svg" alt="달서구 휴식좌석 분석 주요 구성과 데이터 흐름" width="1200">
-</picture>
-
-Python 분석과 현장검수를 거쳐 공개할 후보 JSON을 만듭니다. 브라우저는 이 JSON을 읽는 정적 지도이며, 상시 API 서버나 운영 DB를 두지 않습니다. 분석 점수와 실제 설치 가능 판정은 구분합니다.
-
-| 구성 | 역할 |
-|---|---|
-| 분석 | 공공자료·보행망을 같은 좌표계로 맞춰 수요와 휴식 공백 계산 |
-| 검증 | 민감도 분석과 현장 안전항목 교차검증 |
-| 배포 | 선별한 JSON만 Leaflet·GitHub Pages에 전달 |
-
-<details>
-<summary>아키텍처 상세와 구현 경계</summary>
-
-### 전체 구조를 먼저 보면
-
-이 프로젝트는 서버가 계속 떠 있는 웹 서비스가 아니라, **Python 분석 파이프라인이 검증된 JSON을 만들고 브라우저가 그 JSON을 읽는 정적 웹앱**입니다.
-
-```text
-공공데이터 CSV·SHP·XLSX             OpenStreetMap 보행망
-          │                                  │
-          └──────────────┬───────────────────┘
-                         ▼
-               데이터 점검·좌표 통일
-                   (EPSG:5179)
-                         │
-                         ▼
-        출발지·목적지·기존 휴식좌석 분석 레이어
-                         │
-                         ▼
-          예상 보행 경로 + 도로별 좌석 접근거리
-                         │
-                         ▼
-            수요가 높고 휴식 공백이 긴 구간
-                         │
-                         ▼
-            36개 조건 비교·후보 안정성 평가
-                         │
-                         ▼
-              v2 후보 40개와 현장검수표
-                         │
-                         ▼
-       현장 종합판정 + 세부 안전항목 교차검증
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-        검증된 후보 CSV        QA 오류·차단 사유
-              │
-              ▼
-        docs/candidates.json
-              │
-              ▼
-    docs/index.html + Leaflet + OpenStreetMap
-              │
-              ▼
-              GitHub Pages
-```
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logoColor=white&logo=python)
+![pandas](https://img.shields.io/badge/pandas-150458?style=flat&logoColor=white&logo=pandas)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat&logoColor=white&logo=numpy)
+![OSMnx](https://img.shields.io/badge/OSMnx-7EBC6F?style=flat&logoColor=black)
+![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=flat&logoColor=black&logo=openstreetmap)
+![openpyxl](https://img.shields.io/badge/openpyxl-217346?style=flat&logoColor=white)
+![SQLite (GeoPackage)](https://img.shields.io/badge/SQLite%20%28GeoPackage%29-003B57?style=flat&logoColor=white&logo=sqlite)
+![Leaflet 1.9](https://img.shields.io/badge/Leaflet%201.9-199900?style=flat&logoColor=white&logo=leaflet)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logoColor=black&logo=javascript)
+![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-181717?style=flat&logoColor=white&logo=github)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logoColor=white&logo=githubactions)
+![unittest](https://img.shields.io/badge/unittest-3776AB?style=flat&logoColor=white)
 
-이 구조를 택한 이유는 단순합니다. 지도 이용자가 많지 않고 후보 데이터도 작기 때문에 별도 API 서버나 데이터베이스를 운영하는 것보다, 분석할 때만 Python을 실행하고 결과를 정적 파일로 배포하는 편이 관리하기 쉽습니다. 대신 공개 JSON을 만들기 직전에 안전 게이트를 한 번 더 확인해, 분석용 중간 결과가 그대로 지도에 섞이지 않도록 했습니다.
+대구 달서구에서 어르신이 자주 걸을 것으로 예상되는데 앉아 쉴 곳까지 멀리 가야 하는 길을 공공데이터와 OpenStreetMap 보행망으로 찾고, 현장검수 결과를 안전 기준으로 다시 걸러 지도로 공개한 프로젝트입니다. 결과는 벤치 설치 위치가 아니라 현장조사와 관계기관 협의를 먼저 할 구간이며, 실제 고령자의 GPS 이동 기록은 쓰지 않았습니다.
 
-</details>
+- [공개 지도](https://cres17.github.io/daegu-dalseo-senior-bench/) · [기술 · 검증 보고서](https://cres17.github.io/daegu-dalseo-senior-bench/final-review.html) · [사용한 데이터와 기준시점](DATA_SOURCES.md)
+- 현재 공개 결과: v2 현장검수 후보 40개 중 `INSTALLABLE` 8개가 설치 후 유효폭 · 측정 근거 누락으로 안전 게이트에서 차단되어, 지도에는 이 8개를 재검수 후보로 표시합니다.
 
-## 기술 스택
+## 전체 아키텍처
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/readme/tech-stack-dark.svg">
-  <img src="docs/assets/readme/tech-stack.svg" alt="달서구 휴식좌석 분석 기술 스택" width="1200">
-</picture>
+<p align="center">
+  <img src="docs/assets/readme/architecture.svg" alt="달서구 휴식 좌석 분석 전체 아키텍처" width="100%">
+</p>
 
-| 영역 | 사용 기술 | 역할 |
-|---|---|---|
-| 공간자료 | GeoPandas, OSMnx, OpenStreetMap | 보행망·시설·좌표계 처리 |
-| 수치 분석 | Python, pandas, NumPy | 경로·공백·후보 점수·검수 데이터 처리 |
-| 공개 화면 | HTML, JavaScript, Leaflet | 선별된 JSON을 지도·목록으로 표시 |
-| 배포 | GitHub Pages | 정적 파일 제공 |
-| 검증 | Python unittest | 안전 게이트와 공개 payload 회귀 검사 |
+Python 스크립트가 단계별로 산출물을 만들고, 마지막에 공개해도 되는 필드만 담은 `docs/candidates.json`을 정적 지도가 읽습니다. 서버나 런타임 DB는 없습니다. 폴더는 CRISP-DM 단계 순서를 따릅니다.
 
-## 지금 공개된 결과는 무엇인가요?
+| 단계 | 스크립트 | 하는 일 |
+|------|----------|--------|
+| 보행망 수집 · 검수 | `02_data_understanding/scripts/collect_osmnx_walk_network.py`, `audit_…`, `apply_manual_review_decisions.py` | 달서구 경계 500m 버퍼로 보행망 수집, 연결성 · 계단 · 서비스도로 자동 검수와 수동 판정 반영 |
+| 레이어 정리 | `03_data_preparation/scripts/prepare_analysis_layers.py` | 고령인구 · 경로당 · 복지시설 · 의료기관 · 공원 · 정류장 · 벤치를 EPSG:5179 좌표로 맞추고 입력 SHA-256 기록 |
+| 모델링 | `04_modeling/scripts/model_expected_walk_and_bench_gaps.py` | 출발지-목적지 예상 보행 경로와 도로 구간별 가장 가까운 좌석까지의 거리 계산 |
+| 민감도 평가 | `05_evaluation/scripts/evaluate_priority_candidates.py` | 계단 · 공백 기준 · 생활권 반경 · 가중치를 바꾼 36개 조건의 순위 비교 |
+| v2 재산정 | `revalidate_and_revise_candidates.py` | 1차 현장 결과를 반영해 고령인구 밀도 · 목적지 근거 기준으로 후보 40개 재선정 |
+| 안전 게이트 | `integrate_v2_field_review_results.py` | 현장 판정이 `INSTALLABLE`이어도 유효폭 · 경사 · 횡단 위험 · 검토자 · 증빙을 다시 확인 |
+| 공개 데이터 | `build_public_review_data.py` | 통과 후보(없으면 차단된 후보)만 공개 필드로 변환, 차단 후보가 섞이면 생성 중단 |
 
-현재 지도는 “설치 추천 지도”가 아니라 **안전 재검수가 필요한 후보 지도**입니다.
+## 각 기술 설명
 
-40개 후보의 현장 종합판정은 모두 입력됐지만, `INSTALLABLE`로 기록됐던 8개 구간에 설치 후 유효폭, 측정 근거, 검토자·검토일 누락 또는 세부 안전항목과의 충돌이 있었습니다. 종합판정만 믿고 공개하지 않도록 안전 게이트를 적용했고, 현재 직접 설치 검토군은 0개입니다.
+### OSMnx · OpenStreetMap
 
-| 구분 | 현재 결과 | 지도에서의 의미 |
-| --- | ---: | --- |
-| v2 현장검수 후보 | 40개 | 분석을 거쳐 현장에서 확인한 전체 후보 |
-| 안전 게이트 통과 | 0개 | 모든 필수 안전 근거를 갖춘 직접 검토 후보 |
-| 기존 `INSTALLABLE` 중 차단 | 8개 | 유효폭·안전정보를 보완해야 하는 재검수 후보 |
-| 기존 `CONDITIONAL` | 18개 | 현재 위치 대신 주변 공공부지·후퇴공간 등을 다시 찾을 후보 |
-| `NOT_INSTALLABLE` | 14개 | 현장 설치 부적합으로 후속 순위에서 제외한 후보 |
+`collect_osmnx_walk_network.py`에서만 OSMnx(2.1 계열)를 씁니다. `graph_from_polygon`으로 보행 가능 도로를 받고, `project_graph`로 투영한 뒤 GraphML과 GeoPackage로 저장합니다. 이후 단계는 이 GeoPackage를 입력으로 씁니다. OSM은 계속 수정되므로 다시 수집하면 과거 보행망과 같지 않을 수 있어, 수집 시점과 결과 요약을 함께 기록합니다.
 
-지도에 40개가 아니라 8개만 보이는 이유도 여기에 있습니다. 직접 검토군이 한 건도 없을 때는 빈 지도를 보여주는 대신, 원래 `INSTALLABLE`이었지만 안전 게이트에서 막힌 8개를 보여주고 **무엇을 다시 확인해야 하는지** 설명합니다. 안전 근거가 보완되어 통과 후보가 생기면 같은 화면이 자동으로 직접 검토 후보를 보여주도록 만들어져 있습니다.
+### pandas · NumPy
 
-## 지도를 사용하는 흐름
+모든 분석 단계의 표 처리와 계산을 맡습니다. 공간 연산 라이브러리 없이 직접 구현한 부분이 많습니다.
 
-처음 방문한 사람은 별도의 로그인이나 설치 없이 지도를 열 수 있습니다.
+| 기능 | 구현 |
+|------|------|
+| 좌표 변환 | 위경도 ↔ EPSG:5179(TM) 변환식을 NumPy로 구현 (`forward_tm_5179`, `inverse_epsg5179`) |
+| SHP · DBF 읽기 | `struct`로 행정동 경계 Polygon과 속성 파일을 직접 파싱 |
+| GeoPackage 읽기 | `sqlite3`로 GeoPackage의 WKB 바이너리를 읽어 LineString으로 디코딩 |
+| 경로 탐색 | `heapq` 기반 Dijkstra. 시설을 가까운 노드가 아니라 가장 가까운 도로 엣지에 투영해 연결 |
+| 좌석 공백 | 도로를 최대 25m 간격으로 나눠, 보행망을 따라 가장 가까운 벤치 · 정류장 의자까지의 거리를 다중 시작점 Dijkstra로 계산 |
+| 우선 점수 | `√(예상 보행수요 백분위 × 휴식공백 백분위)` 기하평균. 한쪽 값만 큰 도로가 상위를 독차지하지 않게 함 |
 
-1. 페이지가 열리면 후보 총수, 안전 게이트 통과 수, 차단 수, 제외 수를 먼저 보여줍니다.
-2. 지도 마커와 아래 후보 카드는 같은 후보를 가리킵니다.
-3. 마커나 카드를 누르면 해당 구간으로 확대됩니다.
-4. 오른쪽 상세 영역에서 고령인구, 휴식시설 공백, 예상 경로 수와 함께 차단 사유를 확인합니다.
-5. 유효폭·보도 연속성·경사·횡단 위험·공공 설치 가능성 중 어떤 근거가 빠졌는지 보고 재조사 항목을 정합니다.
+생활권 반경은 500 · 800 · 1,200m를 비교하고 800m를 주 분석값으로 씁니다. 같은 좌표에 여러 행이 있는 의료기관은 하나의 위치로 합쳐 수요가 부풀지 않게 했습니다.
 
-지도 위 점은 도로구간을 알아보기 위한 대표점입니다. 벤치를 놓을 정확한 좌표가 아닙니다.
+### openpyxl
 
-## 코드가 실제로 일하는 순서
+새로 추가된 원천자료를 이전 프로파일과 비교 검증하는 `validate_updated_sources.py`에서 XLSX 파일을 읽을 때 씁니다.
 
-### 1. 데이터 이해와 보행망 검수
+### unittest — 안전 게이트 검증
 
-`02_data_understanding`에서는 원천자료의 열, 결측치, 좌표, 기준시점과 데이터 간 연결 가능성을 먼저 확인합니다. OSMnx로 달서구 경계보다 500m 넓게 보행망을 수집한 뒤, 달서구 내부 연결성·도로 유형·계단·서비스도로 등을 자동 점검합니다.
+`tests/test_v2_field_review_safety.py`의 14개 테스트가 안전 게이트 규칙을 고정합니다. 설치 후 유효폭은 2.0m 이상을 원칙으로 하고, 1.2~2.0m는 관리청 예외 승인 근거가 모두 있어야 하며, 1.2m 미만은 차단합니다. 공개 JSON에 차단 후보가 섞이지 않는지도 함께 검사합니다.
 
-자동검수만으로 판단하기 어려운 도로는 수동 검토표에 남깁니다. 수동판정이 `EXCLUDE`, `EXCLUDE_CONSERVATIVE`, `NO_ROUTE_COMPONENT`이면 이후 경로 탐색에서 제외하고, 불확실한 경우도 보수적으로 처리합니다.
+### Leaflet · JavaScript
 
-주요 코드:
+`docs/index.html`이 Leaflet 1.9.4로 OpenStreetMap 타일 지도를 만들고, `fetch('./candidates.json')`으로 후보를 읽어 요약 숫자 · 마커 · 후보 카드를 그립니다. 후보를 누르면 예상 수요 · 휴식 공백 · 안전 게이트 차단 사유를 보여 줍니다. `docs/final-review.html`은 분석 과정과 검증 결과를 정리한 보고서 페이지입니다.
 
-- [`collect_osmnx_walk_network.py`](02_data_understanding/scripts/collect_osmnx_walk_network.py): OSM 보행망 수집과 기본 품질 요약
-- [`audit_osmnx_walk_network.py`](02_data_understanding/scripts/audit_osmnx_walk_network.py): 연결성·도로속성 자동검수
-- [`apply_manual_review_decisions.py`](02_data_understanding/scripts/apply_manual_review_decisions.py): 사람의 도로 검토 결과 반영
+### GitHub Pages · GitHub Actions
 
-### 2. 분석 가능한 한 좌표계로 정리
-
-`03_data_preparation/scripts/prepare_analysis_layers.py`가 서로 다른 형식의 공공데이터를 읽어 분석용 레이어로 바꿉니다.
-
-- 행정동별 65세 이상 인구
-- 경로당과 노인복지시설
-- 의료기관과 공원
-- 버스정류장 위치와 2025년 승하차량
-- 공원 벤치와 버스정류장 의자
-- 검수된 OSM 보행망
-
-거리와 면적을 미터 단위로 계산하기 위해 분석 중에는 `EPSG:5179`를 사용합니다. 같은 건물에 여러 진료과목이 있는 의료기관처럼 동일 좌표가 반복되는 경우는 하나의 물리적 위치로 합쳐, 데이터 행이 많다는 이유만으로 수요가 부풀지 않게 했습니다.
-
-이 단계는 CSV, GeoJSON, GeoPackage를 만들며 입력 파일의 SHA-256도 `source_manifest.csv`에 기록합니다. 네트워크까지 100m 넘게 떨어진 지점이나 달서구 경계 밖으로 보이는 지점은 자동 삭제하지 않고 별도 QA 목록으로 보냅니다.
-
-### 3. 예상 보행 경로와 휴식 공백 계산
-
-핵심 모델은 `04_modeling/scripts/model_expected_walk_and_bench_gaps.py`에 있습니다.
-
-출발 근거는 행정동 고령인구 대표점, 경로당, 노인복지시설이고 목적지는 의료기관, 노인복지시설, 공원, 버스정류장입니다. 각 점을 가장 가까운 보행 가능 도로 **노드가 아니라 엣지**에 투영해, 도로 중간에 있는 시설의 연결 오차를 줄였습니다.
-
-그다음 두 가지 계산을 같은 도로구간에 겹칩니다.
-
-1. 출발지와 목적지 사이의 예상 보행 경로가 몇 번 지나가는가
-2. 그 도로를 걸을 때 기존 벤치나 정류장 의자까지 얼마나 멀리 가야 하는가
-
-경로는 500m, 800m, 1,200m 생활권을 비교하고 800m를 주 분석 반경으로 사용합니다. 휴식 공백은 도로를 최대 25m 간격으로 나눈 뒤, 검수된 보행망을 따라 가장 가까운 좌석까지의 거리를 계산합니다. 직선 반경 안에 벤치가 있다는 이유만으로 공급이 충분하다고 보지 않습니다.
-
-수요와 공백은 각각 백분위 순위로 바꾸고 기하평균으로 결합합니다.
-
-```text
-우선 검토 점수 = √(예상 보행수요 백분위 × 휴식공백 심각도 백분위)
-```
-
-한쪽 값만 지나치게 높은 도로가 상위권을 독차지하지 않게 하려는 선택입니다. 이 값은 학습된 확률이나 실제 이용률 예측치가 아니라 **현장조사 순서를 정하기 위한 상대 점수**입니다.
-
-### 4. 한 번의 점수에 기대지 않고 민감도 확인
-
-`05_evaluation/scripts/evaluate_priority_candidates.py`는 다음 조건을 바꿔가며 36개 순위를 만듭니다.
-
-- 계단 포함 / 제외
-- 휴식 공백 300m / 500m
-- 생활권 반경 500m / 800m / 1,200m
-- 수요 가중치 35% / 50% / 65%
-
-후보가 여러 조건에서도 계속 상위권에 드는지, 특정 반경에서만 갑자기 나타나는지, 기존 좌석 공급이 충분한 도로가 잘 제외되는지를 확인합니다. 이 단계에서 1차 현장조사 템플릿과 후보별 근거 추적표도 만들어집니다.
-
-### 5. 1차 현장 결과를 반영해 v2 후보 재산정
-
-첫 후보군을 현장에서 검토한 뒤 발견한 문제를 `revalidate_and_revise_candidates.py`에 반영했습니다.
-
-- 고령인구 총수뿐 아니라 행정동 면적당 고령인구 밀도 사용
-- 밀도 상위 25% 지역은 300m, 나머지는 500m 공백 기준 적용
-- 의료·노인복지 목적지 또는 경로당·복지시설 출발 근거가 없는 후보 제외
-- 주차장 통로(`parking_aisle`) 제외
-- 기존 현장판정이 `NOT_INSTALLABLE`인 동일 `physical_id` 도로 제외
-- 도로 전체가 아니라 실제 기준을 넘는 공백 부분만 GeoJSON으로 생성
-
-v2 점수는 고령자 특화 경로, 고령인구 밀도, 일반 생활지원 경로의 비중을 세 가지 방식으로 바꾸고 계단 포함 여부와 함께 비교합니다. 지도에 보이는 `민감도 출현 6회`는 이 3개 점수 조합 × 2개 계단 시나리오에서 후보가 몇 번 선택됐는지를 뜻합니다.
-
-### 6. 현장판정을 다시 의심하는 안전 게이트
-
-현장조사에서 `INSTALLABLE`이라고 입력됐더라도 그대로 직접 검토군에 넣지 않습니다. `integrate_v2_field_review_results.py`가 다음 항목을 교차검증합니다.
-
-- 기존 좌석이 실제로 없는지
-- 연속된 보도가 있는지
-- 벤치 설치 후 가장 좁은 지점의 잔여 유효폭을 실측했는지
-- 경사가 허용 가능한지
-- 횡단 위험이 낮은지
-- 공공 설치 가능성이 높은지
-- 누가 언제 검토했는지
-- 유효폭 측정방법과 사진 등 증빙이 있는지
-
-유효폭은 보수적인 후보 선별 기준으로 원칙 2.0m 이상을 요구합니다. 1.2m 이상 2.0m 미만은 관리청의 예외 승인기관·법적 근거·사유가 모두 있어야 하고, 1.5m 미만이면 교행구역을 추가로 확인합니다. 경사진 좁은 보도는 수평 참 확인도 필요합니다. 1.2m 미만은 직접 검토군에서 차단합니다.
-
-여기서 중요한 점은 OSM의 `width`나 도로 전체 지정 폭을 복사하지 않는다는 것입니다. 현장에서 **벤치를 설치하고 난 뒤 보행에만 쓸 수 있는 가장 좁은 폭**을 재야 합니다. 이 규칙은 최종 법률 판단을 대신하지 않고, 근거가 불완전한 후보가 공개 추천처럼 보이지 않게 막는 용도입니다.
-
-### 7. 공개용 데이터만 따로 만들기
-
-`build_public_review_data.py`는 검증이 끝난 `v2_field_review_validated.csv`만 읽습니다.
-
-- 안전 게이트를 통과한 후보가 있으면 그 후보만 공개합니다.
-- 통과 후보가 없으면 원래 `INSTALLABLE`이었지만 차단된 후보만 재검수 목록으로 공개합니다.
-- 직접 검토 목록에 차단 후보가 섞여 있으면 예외를 발생시키고 파일 생성을 중단합니다.
-- 후보 총수가 예상한 40개가 아니어도 중단합니다.
-
-생성된 `docs/candidates.json`에는 공개 화면에 필요한 필드만 들어갑니다. 원천 현장조사 CSV를 브라우저가 직접 읽게 하지 않은 이유는 내부 메모나 분석용 열을 불필요하게 노출하지 않고, 공개 가능한 판정만 한 번 더 분리하기 위해서입니다.
-
-## 웹앱은 어떻게 동작하나요?
-
-런타임 구조는 작고 단순합니다.
-
-```text
-docs/index.html
-  ├─ Leaflet 1.9.4 로 지도 생성
-  ├─ OpenStreetMap 타일을 바탕지도로 사용
-  ├─ fetch('./candidates.json') 로 검증 결과 로드
-  ├─ 요약 숫자·마커·후보 카드 생성
-  └─ 클릭한 후보의 수요·공백·안전 차단 사유 표시
-
-docs/candidates.json
-  └─ Python 안전 게이트를 통과한 공개용 결과
-
-.github/workflows/deploy-pages.yml
-  └─ main의 docs 변경 시 GitHub Pages에 정적 파일 배포
-```
-
-백엔드 API, 로그인, 런타임 데이터베이스는 없습니다. 페이지를 열면 브라우저가 같은 배포 경로의 JSON을 한 번 읽고 화면을 그립니다. 따라서 서버 장애 지점과 운영비가 적고, Git 커밋만으로 어떤 결과가 언제 공개됐는지 추적할 수 있습니다.
-
-반대로 현장조사 입력과 승인 이력까지 여러 사람이 웹에서 관리하는 업무 시스템은 아닙니다. 현재 현장 입력은 CSV 기반이고, 웹 화면은 결과를 읽는 용도입니다.
-
-## 저장소 구성
-
-```text
-.
-├── 01_business_understanding/   문제 정의, 사용자, 분석 요건
-├── 02_data_understanding/       원천자료 점검, OSM 보행망 수집·검수
-├── 03_data_preparation/         좌표 통일, 시설·인구·좌석 분석 레이어 생성
-├── 04_modeling/                 예상 OD 경로, 좌석 접근거리, 공백·점수 계산
-├── 05_evaluation/               민감도 분석, v2 재산정, 현장검수·안전 게이트
-├── 06_deployment/               운영자·사용자·재분석 절차 문서
-├── docs/                        GitHub Pages에 배포되는 정적 웹앱
-├── tests/                       현장검수 안전 게이트와 공개 JSON 테스트
-├── DATA_SOURCES.md              데이터 기준시점, 사용처, 제외 사유, 해시
-└── README.md                    지금 읽고 있는 프로젝트 안내
-```
-
-숫자로 시작하는 폴더는 분석 순서입니다. 각 단계는 `outputs/`에 다음 단계가 읽을 결과를 만들고 `qa/`에 검증 결과를 남깁니다. 용량이 크거나 재배포 권한을 확인해야 하는 원천자료와 생성 산출물은 `.gitignore`로 제외되어 있어, 공개 저장소에는 코드·문서·테스트·공개 화면만 들어 있습니다.
-
-## 로컬에서 실행하기
-
-### 1. 환경 준비
-
-프로젝트 루트에서 실행합니다. 현재 코드는 Python 3와 pandas·NumPy 2.x 계열을 기준으로 하며, OSM 재수집 단계에는 OSMnx와 openpyxl이 추가로 필요합니다.
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-
-python -m pip install -r 02_data_understanding/requirements-osmnx.txt
-python -m pip install -r 03_data_preparation/requirements-data-preparation.txt
-python -m pip install -r 04_modeling/requirements-modeling.txt
-python -m pip install -r 05_evaluation/requirements-evaluation.txt
-```
-
-### 2. 입력자료 준비
-
-원천 CSV·SHP·XLSX, 검수된 OSM GeoPackage와 완료된 현장검수 CSV는 저장소에 포함하지 않습니다. 필요한 파일명, 기준시점, 해시와 제외한 자료는 [`DATA_SOURCES.md`](DATA_SOURCES.md)에 정리했습니다.
-
-입력자료가 없으면 공개 화면과 코드 구조는 확인할 수 있지만, 전체 분석을 처음부터 같은 결과로 재생성할 수는 없습니다. OpenStreetMap도 계속 수정되므로 새로 내려받으면 과거 보행망과 완전히 같지 않을 수 있습니다.
-
-### 3. 분석 파이프라인 실행
-
-```bash
-# 1) 공공데이터를 분석 레이어로 정리
-python3 03_data_preparation/scripts/prepare_analysis_layers.py
-
-# 2) 예상 경로와 휴식 공백 계산
-python3 04_modeling/scripts/model_expected_walk_and_bench_gaps.py
-
-# 3) 36개 조건의 민감도와 1차 후보 평가
-python3 05_evaluation/scripts/evaluate_priority_candidates.py
-
-# 4) 현장 피드백을 반영한 v2 후보 재산정
-python3 05_evaluation/scripts/revalidate_and_revise_candidates.py
-
-# 5) 완료된 v2 현장검수표 교차검증
-python3 05_evaluation/scripts/integrate_v2_field_review_results.py
-
-# 6) 안전 게이트 결과를 공개 지도용 JSON으로 변환
-python3 05_evaluation/scripts/build_public_review_data.py
-
-# 7) 안전 게이트와 공개 payload 테스트
-python3 -m unittest discover -s tests -v
-```
-
-보행망을 새로 수집하는 경우에는 분석 전에 [OSMnx 보행망 수집 가이드](02_data_understanding/07_OSMnx_보행망_수집_가이드.md)와 [자동검수 가이드](02_data_understanding/08_OSMnx_보행망_자동검수_가이드.md)를 먼저 따라야 합니다.
-
-각 단계의 입력·출력과 확인 방법은 아래 문서에 더 자세히 적었습니다.
-
-1. [Data Preparation 실행 가이드](03_data_preparation/03_실행_가이드.md)
-2. [Modeling 실행 및 후보 검토 가이드](04_modeling/04_실행_및_후보검토_가이드.md)
-3. [Evaluation 실행 가이드](05_evaluation/04_실행_가이드.md)
-4. [데이터 갱신 및 재분석 절차](06_deployment/03_데이터_갱신_및_재분석_절차서.md)
-
-### 4. 공개 지도를 로컬에서 확인
-
-`fetch()`로 JSON을 읽기 때문에 HTML 파일을 Finder에서 바로 열지 말고 간단한 로컬 서버를 사용합니다.
-
-```bash
-python3 -m http.server 8765 --bind 127.0.0.1
-```
-
-브라우저에서 `http://127.0.0.1:8765/docs/`를 열면 됩니다.
-
-## 테스트와 실패 처리
-
-현재 `tests/test_v2_field_review_safety.py`에는 14개 테스트가 있습니다. 다음과 같은 경우를 확인합니다.
-
-- 필수 현장정보가 모두 있는 후보만 통과하는지
-- 2.0m 미만 유효폭에 승인된 예외 근거가 필요한지
-- 1.2m 미만 유효폭을 차단하는지
-- 1.5m 미만에서 교행구역을 요구하는지
-- 좁고 경사진 구간에서 수평 참을 요구하는지
-- 일부 보도, 급경사, 중간·높은 횡단 위험을 차단하는지
-- 공개 JSON의 직접 검토군에 차단 후보가 섞이지 않는지
-
-각 분석 단계도 `qa/*.csv`와 요약 JSON을 만들고, 필수 검사가 실패하면 비정상 종료하도록 작성했습니다. 현재 GitHub Actions는 `docs/`를 Pages에 배포하는 역할만 하며 테스트를 자동 실행하지는 않습니다. 배포 전에는 위 테스트 명령을 로컬에서 실행해야 합니다.
-
-## 결과를 해석할 때 꼭 알아둘 점
-
-- **예상 경로입니다.** 실제 고령자의 이동 궤적이나 GPS 데이터가 아닙니다.
-- **버스 이용량은 대리변수입니다.** 2025년 전체 연령 승하차량이며 고령자 이용량만 분리한 값이 아닙니다.
-- **행정동 내부 차이를 단순화했습니다.** 고령인구는 행정동 대표점과 밀도로 연결했습니다.
-- **공원 벤치 자료는 2022년 기준입니다.** 철거·신설·파손 여부는 현장에서 달라질 수 있습니다.
-- **OSM은 완전하지 않습니다.** 누락되거나 잘못 분류된 보행로가 있을 수 있어 자동·수동검수를 함께 사용했습니다.
-- **점수는 상대 순위입니다.** 실제 설치 효과, 이용 확률 또는 법적 설치 가능성을 뜻하지 않습니다.
-- **현장판정도 다시 검증합니다.** 종합판정과 세부 증거가 충돌하면 종합판정을 우선하지 않습니다.
-- **최종 결정은 사람이 합니다.** 도로관리청·토지소유자 협의, 예산, 유지관리, 주민 의견과 현장 안전검토가 추가로 필요합니다.
-
-분석 결과를 설명할 때는 “고령자의 예상 보행 수요가 높고 휴식 공백이 긴 우선 검토 구간”이라고 표현하는 것이 정확합니다. “실제 노인 이동 경로”, “벤치 최적 설치 위치”, “설치 승인 후보”라고 부르면 이 프로젝트가 확인한 범위를 넘어섭니다.
-
-## 주요 결과와 기록
-
-| 문서 | 무엇을 확인할 수 있나 |
-| --- | --- |
-| [Modeling 방법론](04_modeling/01_Modeling_방법론.md) | 경로 가중치, 좌석거리, 공백과 점수 계산 방식 |
-| [Modeling 결과](04_modeling/02_Modeling_결과_보고서.md) | 82,833개 예상 경로와 39개 고유 도로 후보 |
-| [민감도 평가 결과](05_evaluation/01_Evaluation_결과_보고서.md) | 36개 조건에서 순위가 얼마나 유지되는지 |
-| [1차 현장조사 통합 결과](05_evaluation/06_현장조사_통합_평가_보고서.md) | 처음 29개 후보의 현장판정과 재평가 |
-| [v2 모델 타당성 재검증](05_evaluation/07_모델_타당성_재검증_보고서.md) | 밀도·고령자 특화 근거를 반영한 모델 수정 |
-| [v2 현장검수 통합 결과](05_evaluation/08_v2_현장검수_통합결과.md) | 40개 후보의 최종 분류와 안전 차단 결과 |
-| [유효폭 데이터 품질 점검](05_evaluation/09_유효폭_데이터_품질_점검.md) | 직접 검토 후보가 0개인 이유와 보완 항목 |
-
-## 앞으로 보완할 부분
-
-현재 구조에서 다음 단계로 가려면 분석 정확도와 운영 편의성을 함께 보완해야 합니다.
-
-- 실제 보행량·벤치 이용률·설치 전후 변화를 수집해 점수의 외부 타당성 검증
-- 현장사진, 측정 위치, 조사자와 승인 이력을 웹에서 관리하는 입력 화면
-- 예산과 후보 간 중복 커버리지를 반영한 시설입지 최적화
-- 공원 벤치와 도로·보도 데이터의 정기 갱신
-- 100m 초과 네트워크 스냅 지점의 현장·지도 재검토
-- 테스트·린트·데이터 스키마 검사를 실행하는 CI 품질 게이트
-- 분석 설정과 데이터 버전을 한 번에 고정하는 재현 환경
-
-## 라이선스
-
-원천 데이터는 제공기관별 이용 조건을 따라야 합니다. 이 저장소의 코드와 문서는 별도 라이선스 파일을 추가하기 전까지 모든 권리를 보유합니다.
+`deploy-pages.yml`이 `main`의 `docs/` 폴더를 GitHub Pages에 배포합니다. 공개 결과가 바뀌면 커밋 단위로 언제 어떤 후보가 공개됐는지 추적할 수 있습니다.
