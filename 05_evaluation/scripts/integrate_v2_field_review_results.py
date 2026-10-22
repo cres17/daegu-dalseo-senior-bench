@@ -565,12 +565,6 @@ def main() -> None:
     )
 
     blank_seat = int(review["existing_seat_not_explicitly_checked"].sum())
-    installable_blank_seat = int(
-        installable["existing_seat_not_explicitly_checked"].sum()
-    )
-    installable_public = int(
-        installable["ownership_installability"].eq("PUBLIC_LIKELY").sum()
-    )
     installable_continuous = int(
         installable["continuous_sidewalk"].eq("YES").sum()
     )
