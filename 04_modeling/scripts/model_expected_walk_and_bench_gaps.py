@@ -587,7 +587,6 @@ def route_scenario(
     adjacency: dict[int, list[tuple[int, float, int]]],
     fid_to_physical: dict[int, str],
 ) -> tuple[pd.DataFrame, dict[str, dict[str, float]]]:
-    destination_records = destinations.set_index("destination_id").to_dict("index")
     destination_snap_lookup = destination_snaps.set_index("point_id")
     overlap: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     routes = []

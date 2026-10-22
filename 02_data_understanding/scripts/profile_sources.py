@@ -11,11 +11,10 @@ import csv
 import codecs
 import hashlib
 import json
-import math
 import re
 import struct
 import unicodedata
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
 import pandas as pd
