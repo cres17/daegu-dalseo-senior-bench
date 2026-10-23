@@ -8,13 +8,9 @@
 ![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat&logoColor=white&logo=numpy)
 ![OSMnx](https://img.shields.io/badge/OSMnx-7EBC6F?style=flat&logoColor=black)
 ![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=flat&logoColor=black&logo=openstreetmap)
-![openpyxl](https://img.shields.io/badge/openpyxl-217346?style=flat&logoColor=white)
-![SQLite (GeoPackage)](https://img.shields.io/badge/SQLite%20%28GeoPackage%29-003B57?style=flat&logoColor=white&logo=sqlite)
 ![Leaflet 1.9](https://img.shields.io/badge/Leaflet%201.9-199900?style=flat&logoColor=white&logo=leaflet)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logoColor=black&logo=javascript)
 ![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-181717?style=flat&logoColor=white&logo=github)
 ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logoColor=white&logo=githubactions)
-![unittest](https://img.shields.io/badge/unittest-3776AB?style=flat&logoColor=white)
 
 </div>
 
