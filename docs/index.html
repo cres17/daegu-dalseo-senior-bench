@@ -6,8 +6,8 @@
     <meta name="description" content="대구 달서구 고령자 보행 휴식시설 안전 재검수 후보 지도" />
     <title>달서구 고령자 휴식시설 우선 검토 지도</title>
     <link rel="preconnect" href="https://unpkg.com" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
       :root { --ink:#102a43; --muted:#627d98; --paper:#f7fafc; --line:#d9e2ec; --blue:#1769aa; --teal:#057a75; --orange:#d97706; --shadow:0 8px 24px rgba(16,42,67,.10); }
       * { box-sizing:border-box; }
@@ -70,10 +70,12 @@
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom:19, attribution:'© OpenStreetMap contributors'}).addTo(map);
       const markers = new Map();
       const detail = document.getElementById('detail'); const cards = document.getElementById('cards');
+      // 데이터 값은 HTML로 해석되지 않도록 이스케이프한 뒤 innerHTML에 넣는다
+      function esc(v) { return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
       function fmt(n) { return new Intl.NumberFormat('ko-KR').format(n); }
-      function display(v) { const labels={YES:'확인',PARTIAL:'일부',NO:'아니오',FLAT:'평탄',MODERATE:'보통',STEEP:'급경사',LOW:'낮음',MEDIUM:'중간',HIGH:'높음',PUBLIC_LIKELY:'공공 가능성 높음',MISSING:'미입력',INVALID:'값 오류',STANDARD_PASS:'일반 기준 통과',EXCEPTION_PASS:'승인된 예외 기준 통과',EXCEPTION_REVIEW_REQUIRED:'예외 근거 필요',BELOW_ABSOLUTE_MIN:'예외 최저폭 미달',APPROVED:'승인 확인'}; return labels[v] ?? v; }
+      function display(v) { const labels={YES:'확인',PARTIAL:'일부',NO:'아니오',FLAT:'평탄',MODERATE:'보통',STEEP:'급경사',LOW:'낮음',MEDIUM:'중간',HIGH:'높음',PUBLIC_LIKELY:'공공 가능성 높음',MISSING:'미입력',INVALID:'값 오류',STANDARD_PASS:'일반 기준 통과',EXCEPTION_PASS:'승인된 예외 기준 통과',EXCEPTION_REVIEW_REQUIRED:'예외 근거 필요',BELOW_ABSOLUTE_MIN:'예외 최저폭 미달',APPROVED:'승인 확인'}; return esc(labels[v] ?? v); }
       function renderDetail(c) {
-        detail.innerHTML = `<div class="eyebrow">${c.gateStatus === 'PASS' ? '안전 게이트 통과' : '직접 검토 차단'} · ${c.tier}</div><h2><span class="rank">${c.rank}</span>${c.name}</h2><div>${c.id} · ${c.dong}</div><p class="reason"><b>${c.gateStatus === 'PASS' ? '통과 근거' : '차단 사유'}</b><br>${c.gateReasons.length ? c.gateReasons.join('<br>') : '필수 안전 필드를 모두 충족했습니다.'}</p><div class="metrics"><div class="metric"><b>65세 이상 인구</b><span>${fmt(c.population)}명</span></div><div class="metric"><b>고령인구 밀도</b><span>${fmt(c.density)}명/㎢</span></div><div class="metric"><b>적응형 공백 기준 / 길이</b><span>${c.tier.split(' ').at(-1)} / ${c.gap}m</span></div><div class="metric"><b>최대 좌석거리</b><span>${c.seat}m</span></div><div class="metric"><b>800m 예상 경로</b><span>${c.routes}건</span></div><div class="metric"><b>민감도 출현</b><span>${c.sensitivity}/6회</span></div></div><ul class="checks"><li><b>보도:</b> ${display(c.sidewalk)} · <b>설치 후 유효폭:</b> ${c.widthM === null ? '미입력' : `${c.widthM}m`} (원칙 ${c.requiredWidthM}m)</li><li><b>유효폭 판정:</b> ${display(c.widthCompliance)} · <b>예외 승인:</b> ${display(c.widthException)}</li><li><b>경사:</b> ${display(c.slope)} · <b>횡단 위험:</b> ${display(c.crossing)}</li><li><b>설치 가능성:</b> ${display(c.ownership)}</li></ul>`;
+        detail.innerHTML = `<div class="eyebrow">${c.gateStatus === 'PASS' ? '안전 게이트 통과' : '직접 검토 차단'} · ${esc(c.tier)}</div><h2><span class="rank">${esc(c.rank)}</span>${esc(c.name)}</h2><div>${esc(c.id)} · ${esc(c.dong)}</div><p class="reason"><b>${c.gateStatus === 'PASS' ? '통과 근거' : '차단 사유'}</b><br>${c.gateReasons.length ? c.gateReasons.map(esc).join('<br>') : '필수 안전 필드를 모두 충족했습니다.'}</p><div class="metrics"><div class="metric"><b>65세 이상 인구</b><span>${fmt(c.population)}명</span></div><div class="metric"><b>고령인구 밀도</b><span>${fmt(c.density)}명/㎢</span></div><div class="metric"><b>적응형 공백 기준 / 길이</b><span>${esc(String(c.tier).split(' ').at(-1))} / ${esc(c.gap)}m</span></div><div class="metric"><b>최대 좌석거리</b><span>${esc(c.seat)}m</span></div><div class="metric"><b>800m 예상 경로</b><span>${esc(c.routes)}건</span></div><div class="metric"><b>민감도 출현</b><span>${esc(c.sensitivity)}/6회</span></div></div><ul class="checks"><li><b>보도:</b> ${display(c.sidewalk)} · <b>설치 후 유효폭:</b> ${c.widthM === null ? '미입력' : `${esc(c.widthM)}m`} (원칙 ${esc(c.requiredWidthM)}m)</li><li><b>유효폭 판정:</b> ${display(c.widthCompliance)} · <b>예외 승인:</b> ${display(c.widthException)}</li><li><b>경사:</b> ${display(c.slope)} · <b>횡단 위험:</b> ${display(c.crossing)}</li><li><b>설치 가능성:</b> ${display(c.ownership)}</li></ul>`;
         document.querySelectorAll('button.candidate').forEach(b => b.classList.toggle('active', b.dataset.id === c.id));
       }
       function select(c) { map.flyTo([c.lat,c.lon], 16, {duration:.7}); markers.get(c.id).openPopup(); renderDetail(c); }
@@ -88,14 +90,14 @@
         document.getElementById('summary-text').textContent = payload.mode === 'DIRECT_REVIEW' ? `안전 게이트를 통과한 직접 정밀검토 후보 ${payload.summary.direct}개를 보여줍니다.` : `기존 INSTALLABLE ${payload.summary.safetyBlocked}개가 안전 게이트에서 차단되어 재검수가 필요합니다. 현재 직접 설치 검토군은 ${payload.summary.direct}개입니다.`;
         document.getElementById('list-title').textContent = payload.mode === 'DIRECT_REVIEW' ? '안전 게이트 통과 후보' : '안전 재검수 후보 — 카드를 누르면 차단 사유를 확인할 수 있습니다.';
         candidates.forEach(c => {
-        const icon = L.divIcon({className:'', html:`<div style="background:#1769aa;color:#fff;border:3px solid #fff;box-shadow:0 2px 7px #345;border-radius:50%;width:31px;height:31px;display:grid;place-items:center;font-weight:800">${c.rank}</div>`, iconSize:[31,31], iconAnchor:[15,15]});
-        const marker = L.marker([c.lat,c.lon], {icon}).addTo(map).bindPopup(`<b>${c.rank}. ${c.name}</b><br>${c.dong} · ${c.tier}<br><small>클릭하면 안전 게이트 판정을 확인합니다.</small>`);
+        const icon = L.divIcon({className:'', html:`<div style="background:#1769aa;color:#fff;border:3px solid #fff;box-shadow:0 2px 7px #345;border-radius:50%;width:31px;height:31px;display:grid;place-items:center;font-weight:800">${esc(c.rank)}</div>`, iconSize:[31,31], iconAnchor:[15,15]});
+        const marker = L.marker([c.lat,c.lon], {icon}).addTo(map).bindPopup(`<b>${esc(c.rank)}. ${esc(c.name)}</b><br>${esc(c.dong)} · ${esc(c.tier)}<br><small>클릭하면 안전 게이트 판정을 확인합니다.</small>`);
         marker.on('click', () => renderDetail(c)); markers.set(c.id,marker);
-        const button = document.createElement('button'); button.className='candidate'; button.dataset.id=c.id; button.innerHTML=`<b>${c.rank}. ${c.name}</b><small>${c.dong} · ${c.tier}<br>공백 ${c.gap}m · 좌석거리 ${c.seat}m</small>`; button.onclick=()=>select(c); cards.appendChild(button);
+        const button = document.createElement('button'); button.className='candidate'; button.dataset.id=c.id; button.innerHTML=`<b>${esc(c.rank)}. ${esc(c.name)}</b><small>${esc(c.dong)} · ${esc(c.tier)}<br>공백 ${esc(c.gap)}m · 좌석거리 ${esc(c.seat)}m</small>`; button.onclick=()=>select(c); cards.appendChild(button);
         });
         if (candidates.length) renderDetail(candidates[0]); else detail.innerHTML = '<h2>표시할 후보가 없습니다.</h2>';
       }
-      init().catch(error => { detail.innerHTML = `<h2>데이터를 불러오지 못했습니다.</h2><p>${error.message}</p>`; console.error(error); });
+      init().catch(error => { detail.innerHTML = `<h2>데이터를 불러오지 못했습니다.</h2><p>${esc(error.message)}</p>`; console.error(error); });
     </script>
   </body>
 </html>
