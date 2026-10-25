@@ -1,4 +1,19 @@
-# 달서구 어르신 휴식 좌석 공백 분석
+<h1 align="center">달서구 어르신 휴식 좌석 공백 분석</h1>
+
+<div align="center">
+
+[![Deploy map](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml)
+
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logoColor=white&logo=python)
+![pandas](https://img.shields.io/badge/pandas-150458?style=flat&logoColor=white&logo=pandas)
+![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat&logoColor=white&logo=numpy)
+![OSMnx](https://img.shields.io/badge/OSMnx-7EBC6F?style=flat&logoColor=black)
+![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=flat&logoColor=black&logo=openstreetmap)
+![Leaflet 1.9](https://img.shields.io/badge/Leaflet%201.9-199900?style=flat&logoColor=white&logo=leaflet)
+![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-181717?style=flat&logoColor=white&logo=github)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logoColor=white&logo=githubactions)
+
+</div>
 
 대구 달서구에서 어르신의 보행이 많을 것으로 예상되면서 앉아 쉴 곳은 먼 구간을 찾는 프로젝트입니다. 공공데이터와 OSM 보행망으로 후보를 계산한 뒤 현장검수 결과를 반영했습니다.
 
