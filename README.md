@@ -28,14 +28,13 @@ v2 현장검수 후보는 40개입니다. 이 중 `INSTALLABLE`로 분류된 8�
 
 ## 분석 과정
 
-<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-397D67?style=flat-square" alt="MAIN 기능" height="20"></p>
 
 ![분석부터 공개까지의 과정](docs/assets/readme/architecture.svg)
 
 폴더는 CRISP-DM 순서로 구성했습니다. Python 스크립트가 단계별 파일을 만들고, 마지막 산출물을 Leaflet 지도가 읽습니다. 실행 중인 API 서버나 DB는 없습니다.
 
 | 폴더 | 작업 |
-|---|---|
+|:---:|:---:|
 | `01_business_understanding` | 분석 목적과 요구사항 |
 | `02_data_understanding` | 원천자료 확인, 보행망 수집과 검수 |
 | `03_data_preparation` | 좌표 통일과 분석 레이어 생성 |
@@ -46,7 +45,6 @@ v2 현장검수 후보는 40개입니다. 이 중 `INSTALLABLE`로 분류된 8�
 
 ## 보행망과 후보 점수
 
-<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-397D67?style=flat-square" alt="MAIN 기능" height="20"></p>
 
 OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. 연결성, 계단과 서비스도로를 자동 검수하고 수동 판정을 반영합니다. 후속 분석은 저장된 GeoPackage를 입력으로 사용합니다.
 
@@ -58,7 +56,6 @@ OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. �
 
 ## 현장검수
 
-<p><img src="https://img.shields.io/badge/SUB%20FEATURE-94B9AD?style=flat-square" alt="SUB 기능" height="20"></p>
 
 현장 결과를 반영해 후보를 재산정한 뒤 유효폭, 경사, 횡단 위험, 검토자와 증빙을 다시 검사합니다. 현장 기록이 `INSTALLABLE`이라는 이유만으로 공개 가능한 후보로 처리하지 않습니다.
 
@@ -77,7 +74,7 @@ OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. �
 모든 분석 단계의 표 처리와 계산을 맡습니다. 공간 연산 라이브러리 없이 직접 구현한 부분이 많습니다.
 
 | 기능 | 구현 |
-|------|------|
+|:---:|:---:|
 | 좌표 변환 | 위경도 ↔ EPSG:5179(TM) 변환식을 NumPy로 구현 (`forward_tm_5179`, `inverse_epsg5179`) |
 | SHP · DBF 읽기 | `struct`로 행정동 경계 Polygon과 속성 파일을 직접 파싱 |
 | GeoPackage 읽기 | `sqlite3`로 GeoPackage의 WKB 바이너리를 읽어 LineString으로 디코딩 |
