@@ -28,6 +28,8 @@ v2 현장검수 후보는 40개입니다. 이 중 `INSTALLABLE`로 분류된 8�
 
 ## 분석 과정
 
+<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-397D67?style=flat-square" alt="MAIN 기능" height="20"></p>
+
 ![분석부터 공개까지의 과정](docs/assets/readme/architecture.svg)
 
 폴더는 CRISP-DM 순서로 구성했습니다. Python 스크립트가 단계별 파일을 만들고, 마지막 산출물을 Leaflet 지도가 읽습니다. 실행 중인 API 서버나 DB는 없습니다.
@@ -44,6 +46,8 @@ v2 현장검수 후보는 40개입니다. 이 중 `INSTALLABLE`로 분류된 8�
 
 ## 보행망과 후보 점수
 
+<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-397D67?style=flat-square" alt="MAIN 기능" height="20"></p>
+
 OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. 연결성, 계단과 서비스도로를 자동 검수하고 수동 판정을 반영합니다. 후속 분석은 저장된 GeoPackage를 입력으로 사용합니다.
 
 고령인구와 생활시설, 기존 좌석을 EPSG:5179로 맞춥니다. 시설은 가까운 노드가 아니라 가까운 도로 엣지에 투영해 연결합니다. 동일 위치의 의료기관은 합쳐 수요가 중복 계산되지 않도록 했습니다.
@@ -53,6 +57,8 @@ OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. �
 우선 점수는 `√(예상 보행수요 백분위 × 휴식공백 백분위)`입니다. 수요나 공백 한쪽만 큰 구간이 상위에 몰리지 않도록 기하평균을 사용했습니다. 생활권 반경은 500·800·1,200m를 비교하고 주 분석에는 800m를 적용했습니다. 계단, 공백 기준과 가중치를 포함해 36개 조건에서 순위 변화를 확인했습니다.
 
 ## 현장검수
+
+<p><img src="https://img.shields.io/badge/SUB%20FEATURE-94B9AD?style=flat-square" alt="SUB 기능" height="20"></p>
 
 현장 결과를 반영해 후보를 재산정한 뒤 유효폭, 경사, 횡단 위험, 검토자와 증빙을 다시 검사합니다. 현장 기록이 `INSTALLABLE`이라는 이유만으로 공개 가능한 후보로 처리하지 않습니다.
 
