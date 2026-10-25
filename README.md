@@ -3,23 +3,21 @@
 # 달서구 어르신 휴식 좌석 공백 분석
 
 [![Deploy map](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/cres17/daegu-dalseo-senior-bench/actions/workflows/deploy-pages.yml)
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logoColor=white&logo=python)
-![pandas](https://img.shields.io/badge/pandas-150458?style=flat&logoColor=white&logo=pandas)
-![NumPy](https://img.shields.io/badge/NumPy-013243?style=flat&logoColor=white&logo=numpy)
-![OSMnx](https://img.shields.io/badge/OSMnx-7EBC6F?style=flat&logoColor=black)
-![OpenStreetMap](https://img.shields.io/badge/OpenStreetMap-7EBC6F?style=flat&logoColor=black&logo=openstreetmap)
-![Leaflet 1.9](https://img.shields.io/badge/Leaflet%201.9-199900?style=flat&logoColor=white&logo=leaflet)
-![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-181717?style=flat&logoColor=white&logo=github)
-![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=flat&logoColor=white&logo=githubactions)
+
+<p>Python · pandas · NumPy · OSMnx</p>
 
 </div>
+
+[구조](#architecture) · [구현 살펴보기](#implementation)
 
 대구 달서구에서 어르신이 자주 걸을 것으로 예상되는데 앉아 쉴 곳까지 멀리 가야 하는 길을 공공데이터와 OpenStreetMap 보행망으로 찾고, 현장검수 결과를 안전 기준으로 다시 걸러 지도로 공개한 프로젝트입니다. 결과는 벤치 설치 위치가 아니라 현장조사와 관계기관 협의를 먼저 할 구간이며, 실제 고령자의 GPS 이동 기록은 쓰지 않았습니다.
 
 - [공개 지도](https://cres17.github.io/daegu-dalseo-senior-bench/) · [기술 · 검증 보고서](https://cres17.github.io/daegu-dalseo-senior-bench/final-review.html) · [사용한 데이터와 기준시점](DATA_SOURCES.md)
 - 현재 공개 결과: v2 현장검수 후보 40개 중 `INSTALLABLE` 8개가 설치 후 유효폭 · 측정 근거 누락으로 안전 게이트에서 차단되어, 지도에는 이 8개를 재검수 후보로 표시합니다.
 
-## 전체 아키텍처
+<a id="architecture"></a>
+
+## 구조 한눈에 보기
 
 <p align="center">
   <img src="docs/assets/readme/architecture.svg" alt="달서구 휴식 좌석 분석 전체 아키텍처" width="100%">
@@ -37,7 +35,9 @@ Python 스크립트가 단계별로 산출물을 만들고, 마지막에 공개�
 | 안전 게이트 | `integrate_v2_field_review_results.py` | 현장 판정이 `INSTALLABLE`이어도 유효폭 · 경사 · 횡단 위험 · 검토자 · 증빙을 다시 확인 |
 | 공개 데이터 | `build_public_review_data.py` | 통과 후보(없으면 차단된 후보)만 공개 필드로 변환, 차단 후보가 섞이면 생성 중단 |
 
-## 각 기술 설명
+<a id="implementation"></a>
+
+## 구현 살펴보기
 
 ### OSMnx · OpenStreetMap
 
