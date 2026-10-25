@@ -59,6 +59,43 @@ OSMnx로 달서구 경계에 500m 버퍼를 둔 보행망을 수집합니다. �
 
 `build_public_review_data.py`는 공개할 필드만 `docs/candidates.json`으로 내보냅니다. 통과 후보가 없을 때는 차단 후보를 재검수 상태로 공개합니다. 통과 결과와 차단 결과가 잘못 섞인 경우에는 생성을 중단합니다.
 
+## 기술별 역할
+
+### OSMnx · OpenStreetMap
+
+`collect_osmnx_walk_network.py`에서만 OSMnx(2.1 계열)를 씁니다. `graph_from_polygon`으로 보행 가능 도로를 받고, `project_graph`로 투영한 뒤 GraphML과 GeoPackage로 저장합니다. 이후 단계는 이 GeoPackage를 입력으로 씁니다. OSM은 계속 수정되므로 다시 수집하면 과거 보행망과 같지 않을 수 있어, 수집 시점과 결과 요약을 함께 기록합니다.
+
+### pandas · NumPy
+
+모든 분석 단계의 표 처리와 계산을 맡습니다. 공간 연산 라이브러리 없이 직접 구현한 부분이 많습니다.
+
+| 기능 | 구현 |
+|------|------|
+| 좌표 변환 | 위경도 ↔ EPSG:5179(TM) 변환식을 NumPy로 구현 (`forward_tm_5179`, `inverse_epsg5179`) |
+| SHP · DBF 읽기 | `struct`로 행정동 경계 Polygon과 속성 파일을 직접 파싱 |
+| GeoPackage 읽기 | `sqlite3`로 GeoPackage의 WKB 바이너리를 읽어 LineString으로 디코딩 |
+| 경로 탐색 | `heapq` 기반 Dijkstra. 시설을 가까운 노드가 아니라 가장 가까운 도로 엣지에 투영해 연결 |
+| 좌석 공백 | 도로를 최대 25m 간격으로 나눠, 보행망을 따라 가장 가까운 벤치 · 정류장 의자까지의 거리를 다중 시작점 Dijkstra로 계산 |
+| 우선 점수 | `√(예상 보행수요 백분위 × 휴식공백 백분위)` 기하평균. 한쪽 값만 큰 도로가 상위를 독차지하지 않게 함 |
+
+생활권 반경은 500 · 800 · 1,200m를 비교하고 800m를 주 분석값으로 씁니다. 같은 좌표에 여러 행이 있는 의료기관은 하나의 위치로 합쳐 수요가 부풀지 않게 했습니다.
+
+### openpyxl
+
+새로 추가된 원천자료를 이전 프로파일과 비교 검증하는 `validate_updated_sources.py`에서 XLSX 파일을 읽을 때 씁니다.
+
+### unittest — 안전 게이트 검증
+
+`tests/test_v2_field_review_safety.py`의 14개 테스트가 안전 게이트 규칙을 고정합니다. 설치 후 유효폭은 2.0m 이상을 원칙으로 하고, 1.2~2.0m는 관리청 예외 승인 근거가 모두 있어야 하며, 1.2m 미만은 차단합니다. 공개 JSON에 차단 후보가 섞이지 않는지도 함께 검사합니다.
+
+### Leaflet · JavaScript
+
+`docs/index.html`이 Leaflet 1.9.4로 OpenStreetMap 타일 지도를 만들고, `fetch('./candidates.json')`으로 후보를 읽어 요약 숫자 · 마커 · 후보 카드를 그립니다. 후보를 누르면 예상 수요 · 휴식 공백 · 안전 게이트 차단 사유를 보여 줍니다. `docs/final-review.html`은 분석 과정과 검증 결과를 정리한 보고서 페이지입니다.
+
+### GitHub Pages · GitHub Actions
+
+`deploy-pages.yml`이 `main`의 `docs/` 폴더를 GitHub Pages에 배포합니다. 공개 결과가 바뀌면 커밋 단위로 언제 어떤 후보가 공개됐는지 추적할 수 있습니다.
+
 ## 재현과 갱신
 
 단계별 requirements와 실행 가이드를 각 폴더에 두었습니다. 수집부터 다시 실행하면 OSM의 변경으로 보행망이 달라질 수 있으므로, 입력 시점과 SHA-256을 함께 기록해야 이전 결과와 비교할 수 있습니다.
